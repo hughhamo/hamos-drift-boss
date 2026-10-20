@@ -60,7 +60,7 @@ h1{margin:0;font-size:clamp(46px,7vw,70px);line-height:.92;letter-spacing:-.065e
 #garageLaunch button:hover,.menuTools button:hover{border-color:#91fff2;background:#224268}
 #shell.menu #garageLaunch{display:none}
 #shell:not(.menu) .menuTools,#shell:not(.menu) #menuCarHint{display:none!important}
-.menuTools{position:absolute;inset:0;z-index:12;pointer-events:none}.menuTools button{position:absolute;pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:124px;height:124px;border-radius:50%;font-size:36px;background:radial-gradient(circle at 30% 30%,#20395ebd,#07131fe8 70%);backdrop-filter:blur(8px);box-shadow:0 0 28px #0009,0 0 22px #3dd8ff2a;border:1px solid #90ddff55}.menuTools button span{font-size:11px;letter-spacing:.18em;font-weight:900}.menuTools button:hover{transform:scale(1.04)}#openShopMenu{left:28px;top:50%;transform:translateY(-50%)}#openBoardMenu{right:28px;top:50%;transform:translateY(-50%)}#openProfileMenu{display:none}.menuTools button:hover{border-color:#b2ffff;background:radial-gradient(circle at 30% 30%,#274675e0,#0a1727f0 70%)}#openShopMenu:hover,#openBoardMenu:hover{transform:translateY(-50%) scale(1.05)}#menuCarHint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:12;color:#d7ebf8;font-size:12px;letter-spacing:.22em;font-weight:900;text-shadow:0 0 14px #000;pointer-events:none}
+.menuTools{position:absolute;inset:0;z-index:12;pointer-events:none}.menuTools button{position:absolute;pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:124px;height:124px;border-radius:50%;font-size:36px;background:radial-gradient(circle at 30% 30%,#20395ebd,#07131fe8 70%);backdrop-filter:blur(8px);box-shadow:0 0 28px #0009,0 0 22px #3dd8ff2a;border:1px solid #90ddff55}.menuTools button span{font-size:11px;letter-spacing:.18em;font-weight:900}.menuTools button:hover{transform:scale(1.04)}#openShopMenu{left:28px;top:50%;transform:translateY(-50%)}#openAchievementsMenu{left:38px;top:72%;width:102px;height:102px;font-size:29px}#openAchievementsMenu span{font-size:9px}#openBoardMenu{right:28px;top:50%;transform:translateY(-50%)}#openProfileMenu{display:none}.menuTools button:hover{border-color:#b2ffff;background:radial-gradient(circle at 30% 30%,#274675e0,#0a1727f0 70%)}#openShopMenu:hover,#openBoardMenu:hover{transform:translateY(-50%) scale(1.05)}#menuCarHint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:12;color:#d7ebf8;font-size:12px;letter-spacing:.22em;font-weight:900;text-shadow:0 0 14px #000;pointer-events:none}
 #modalWrap{position:fixed;inset:0;z-index:35;background:rgba(1,8,22,.86);backdrop-filter:blur(13px);display:none;align-items:center;justify-content:center;padding:20px;touch-action:pan-y}
 #modalWrap.open{display:flex}
 #modalWindow{width:min(760px,100%);max-height:min(780px,90vh);display:flex;flex-direction:column;background:linear-gradient(145deg,#172d4a,#0c142c 62%,#16133c);border:1px solid #79cffb77;border-radius:22px;box-shadow:0 25px 90px #000c;overflow:hidden}
@@ -68,7 +68,7 @@ h1{margin:0;font-size:clamp(46px,7vw,70px);line-height:.92;letter-spacing:-.065e
 #modalContent{padding:18px 20px 22px;overflow-y:auto;overscroll-behavior:contain;user-select:text;touch-action:pan-y}
 .modalTabs{display:flex;gap:8px;margin-bottom:17px;flex-wrap:wrap}.modalTabs button{background:#152e4c;border:1px solid #6aa5ba55;border-radius:10px;padding:10px 13px;color:#dcfaff;font-weight:850;cursor:pointer}.modalTabs button.active{background:#287691;border-color:#8ef7ee}
 .walletBar{padding:12px 14px;background:#152f42;border:1px solid #6a8b8a77;border-radius:11px;margin-bottom:15px;font-weight:900;color:#ffe291}
-.tierGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.achGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.achCard{border:1px solid #526c89;border-radius:12px;padding:13px;background:#09182e}.achCard.done{border-color:#7ff3bf}.achCard h3{margin:0 0 8px;font-size:15px}.achCard p{font-size:12px;color:#bfd2e2;margin:7px 0}.achBar{height:6px;border-radius:9px;background:#2c3d54;overflow:hidden}.achBar b{display:block;height:100%;background:#85ffbf}.achCard button{padding:8px;border:0;border-radius:8px;background:#83e5ff;font-weight:800}.achCard button:disabled{background:#52667d;color:#c9d5e0}.leaderReal{margin-left:16px;color:#93a2b6;font-size:11px;font-weight:400}.tierGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .tierCard{padding:13px;border:1px solid #7b9cba57;border-radius:14px;background:#122238b8;min-height:134px;display:flex;flex-direction:column;gap:7px}
 .tierCard.equipped{border-color:#7cffc5;box-shadow:inset 0 0 20px #2cf9a716}.tierTitle{font-size:14px;font-weight:950}.tierSub{font-size:11px;color:#b7ccdd;line-height:1.4}.tierCard .price{font-weight:900;color:#ffe185;font-size:13px;margin-top:auto}.tierCard button{border:0;border-radius:8px;padding:9px;font-weight:900;color:#061c2a;background:#8be8ff;cursor:pointer}.tierCard button:disabled{background:#65748b;color:#c6d3db;cursor:default}
 .themePreview{width:100%;height:18px;border-radius:6px;border:1px solid #ffffff2b}.tierActions{display:flex;gap:8px;margin-top:12px}.tierActions button{flex:1}.previewMini{background:linear-gradient(120deg,#162131,#30435b);border:1px solid #9cd9ff3c;border-radius:10px;color:#e6faff;padding:10px 12px;font:900 11px system-ui;letter-spacing:.08em;cursor:pointer}.previewMini.active{outline:1px solid #aefaff;background:linear-gradient(120deg,#18324b,#2d6176)}.shopPreviewBox{margin:14px 0 18px;border:1px solid #a4def03c;border-radius:16px;padding:14px;background:linear-gradient(180deg,#08111fcc,#101629e6)}.stickyPreview{position:sticky;top:0;z-index:2;box-shadow:0 10px 32px #0008}.driftPreviewCanvas{display:block;width:100%;height:auto;max-height:180px;border-radius:12px;border:1px solid #65a5cf38;background:#090e20;margin-top:10px}.previewSmokeScene{height:86px;border-radius:12px;background:linear-gradient(180deg,#07111c,#050914);position:relative;overflow:hidden}.previewSmokeScene::before,.previewSmokeScene::after{content:"";position:absolute;left:18%;right:18%;height:4px;border-radius:999px;top:55%;transform-origin:left center}.previewThemeScene{height:116px;border-radius:12px;overflow:hidden;position:relative}.previewThemeScene::after{content:"";position:absolute;left:12%;right:12%;bottom:18px;height:22px;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.01));border:1px solid #ffffff14}
@@ -97,7 +97,7 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 <div id="overlay" class="intro"><div class="panel"><div id="kicker" class="kicker">STARTING CAR · STREET HATCH</div><h1 id="headline"><span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em></h1><div id="message">PRESS SPACE TO PLAY</div><div id="onlineIntro">◈ <span id="onlineLinkStatus">CONNECTING LEADERBOARD…</span><small>CLICK THE CAR TO CHOOSE A NICKNAME &amp; COMPETE</small></div><div class="instruction"><span class="key">SPACE</span><span><b>HOLD</b> → drive diagonally right<br><b>RELEASE</b> → drive diagonally left</span></div><button class="cta" id="play">START DRIVING →</button><button id="backToModes" type="button">HOME</button><div class="hint">Tap or click to play on mobile</div></div></div>
 
 <div id="garageLaunch"></div>
-<div class="menuTools"><button id="openShopMenu" type="button">🛠<span>GARAGE</span></button><button id="openBoardMenu" type="button">🏆<span>LEADERBOARD</span></button><button id="openProfileMenu" type="button">👤 MY NAME</button></div><div id="menuCarHint">CLICK THE CAR TO CHOOSE YOUR RACING NICKNAME</div>
+<div class="menuTools"><button id="openShopMenu" type="button">🛠<span>GARAGE</span></button><button id="openAchievementsMenu" type="button">✦<span>ACHIEVEMENTS</span></button><button id="openBoardMenu" type="button">🏆<span>LEADERBOARD</span></button><button id="openProfileMenu" type="button">👤 MY NAME</button></div><div id="menuCarHint">CLICK THE CAR TO CHOOSE YOUR RACING NICKNAME</div>
 <div id="modalWrap" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><section id="modalWindow"><div class="modalHead"><strong id="modalTitle">GARAGE</strong><button id="modalClose" type="button" aria-label="Close">×</button></div><div id="modalContent"></div></section></div>
 <div id="bottom">RELEASE <b>↖ LEFT</b> &nbsp;·&nbsp; HOLD SPACE <b>RIGHT ↗</b></div>
 </div>
@@ -140,23 +140,22 @@ const ATMOSPHERES=[
  {name:'Molten Core',price:40000,desc:'Almost-black lava world with glowing crimson rivers',bg:['#070507','#340710','#ab2212','#1a0509'],glow:['#ff260f','#ff8a27'],deck:['#2d101b','#481d1d','#20101a'],neon:['#ff2e31','#ff971e']},
  {name:'Golden Mirage',price:80000,desc:'Burning desert-gold atmosphere against deep petrol-blue',bg:['#172237','#95612e','#edb65f','#122d36'],glow:['#ffdd74','#54fbe8'],deck:['#374c4a','#6b5235','#2f4f5b'],neon:['#ffe34d','#53fff0']},
  {name:'Ultraviolet Rift',price:160000,desc:'Electric magenta lightning in an impossible violet sky',bg:['#08001f','#390073','#ba16ca','#19004d'],glow:['#fc2dff','#6d28ff'],deck:['#241050','#3f1971','#20134a'],neon:['#ff51f7','#9562ff']},
- {name:'Abyssal Ocean',price:320000,desc:'Inky blue ocean, luminous bioluminescent trails',bg:['#000817','#002344','#008caa','#000c26'],glow:['#11ffee','#1573ff'],deck:['#051a36','#075274','#052241'],neon:['#10ffed','#308aff']},
- {name:'Candy Dreamscape',price:640000,desc:'Surreal luminous pink clouds with mint and gold prisms',bg:['#471257','#d65ebc','#93e6ce','#382663'],glow:['#ffc0f3','#85ffee'],deck:['#74528e','#a372a0','#537c94'],neon:['#fff79b','#85fff2']},
- {name:'Prismatic Oblivion',price:1280000,desc:'Near-black cosmic void with vivid auroras and chromatic rails',bg:['#01020b','#180c3b','#06566b','#02020e'],glow:['#ff3ee9','#20ffe4'],deck:['#080d22','#182f47','#070d2b'],neon:['#e9ff47','#ff39d4']}
+ {name:'Abyssal Ocean',price:320000,desc:'Inky blue ocean, luminous bioluminescent trails',bg:['#000817','#002344','#008caa','#000c26'],glow:['#11ffee','#1573ff'],deck:['#051a36','#075274','#052241'],neon:['#10ffed','#308aff']}
 ];
-let account={nickname:'',wallet:0,smokeOwned:[0],atmosOwned:[0],smokeEquipped:0,atmosEquipped:0,verifiedBest:0};
+let account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],smokeEquipped:0,atmosEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0}};
 try{const a=JSON.parse(localStorage.getItem(DB_SAVE_KEY)||'{}');account={...account,...a};}catch(e){}
 account.wallet=Number.isFinite(+account.wallet)?Math.max(0,Math.floor(+account.wallet)):0;
 for(const kind of ['smoke','atmos']){
- const n=kind==='smoke'?SMOKE_OPTIONS.length:ATMOSPHERES.length;
+ const n=kind==='smoke'?SMOKE_OPTIONS.length+10:ATMOSPHERES.length+2;
  account[kind+'Owned']=Array.from(new Set([0,...(Array.isArray(account[kind+'Owned'])?account[kind+'Owned']:[]).filter(i=>Number.isInteger(i)&&i>=0&&i<n)]));
  if(!account[kind+'Owned'].includes(account[kind+'Equipped']))account[kind+'Equipped']=0;
 }
+account.achievementClaims=Array.isArray(account.achievementClaims)?account.achievementClaims:[];account.achievementCounts={loops:0,bananas:0,green:0,red:0,...(account.achievementCounts||{})};
 const cleanName=name=>String(name||'').trim().replace(/[^a-zA-Z0-9 _-]/g,'').replace(/\s{2,}/g,' ').slice(0,18);
 account.nickname=cleanName(account.nickname);
 function saveAccount(){try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}}
-function activeTheme(){const idx=(state==='menu'&&modalWrap?.classList.contains('open')?previewAtmosIndex:null)??account.atmosEquipped;return ATMOSPHERES[idx]||ATMOSPHERES[0]}
-function activeSmoke(){return SMOKE_OPTIONS[account.smokeEquipped]||SMOKE_OPTIONS[0]}
+function activeTheme(){const idx=(state==='menu'&&modalWrap?.classList.contains('open')?previewAtmosIndex:null)??account.atmosEquipped;return ALL_THEMES[idx]||ATMOSPHERES[0]}
+function activeSmoke(){return ALL_SMOKES[account.smokeEquipped]||SMOKE_OPTIONS[0]}
 function shopEarn(amount){account.wallet+=amount;saveAccount();}
 let usedAssistThisRun=false,modalWasPlaying=false,modalPage='shop',shopTab='smoke',previewSmokeIndex=null,previewAtmosIndex=null,garageFree=false,globalBoard=[],boardStatus='Connecting to worldwide leaderboard…',onlineApi=null,lastOnlineScoreSent=0,onlineBusy=false;
 
@@ -260,7 +259,7 @@ function collectNearbyCoins(){
  for(let i=coins.length-1;i>=0;i--){
   const c=coins[i],dx=c.x-player.x,dz=c.z-player.z;
   if(dx*dx+dz*dz<(c.value===5?22:11.56)){
-   coins.splice(i,1);collectCoin(c.value||1);
+   coins.splice(i,1);collectCoin(c.value||1);if(c.value===5){account.achievementCounts.red++;saveAccount();}
   }
  }
 }
@@ -275,7 +274,7 @@ function collectNearbyBananas(){
   const banana=bananas[i],dx=banana.x-player.x,dz=banana.z-player.z;
   if(dx*dx+dz*dz<8.4){
    bananas.splice(i,1);
-   bananaSpinTime=0.98;bananaSpinAngle=0;bananaSpinCount++;
+   bananaSpinTime=0.98;bananaSpinAngle=0;bananaSpinCount++;account.achievementCounts.bananas++;saveAccount();
    collectCoin(5);sound(600,.14,.028);
   }
  }
@@ -532,16 +531,35 @@ function closeModal(){
 }
 $('modalClose').addEventListener('click',closeModal);
 modalWrap.addEventListener('pointerdown',e=>{if(e.target===modalWrap)closeModal()});
-for(const pair of [['openShopMenu','shop'],['openBoardMenu','board'],['openProfileMenu','profile']]){const el=$(pair[0]);if(el)el.addEventListener('click',()=>openModal(pair[1]))}
+for(const pair of [['openShopMenu','shop'],['openBoardMenu','board'],['openAchievementsMenu','achievements'],['openProfileMenu','profile']]){const el=$(pair[0]);if(el)el.addEventListener('click',()=>openModal(pair[1]))}
 function renderModal(){
- const titles={shop:'CUSTOM GARAGE',board:'ALL-TIME HIGH SCORES',profile:'YOUR PLAYER PROFILE'};
+ const titles={shop:'CUSTOM GARAGE',board:'ALL-TIME HIGH SCORES',profile:'YOUR PLAYER PROFILE',achievements:'ACHIEVEMENTS'};
  modalTitle.textContent=titles[modalPage];
  if(modalPage==='shop')renderShop();
  if(modalPage==='profile')renderProfile();
- if(modalPage==='board')renderBoard();
+ if(modalPage==='board')renderBoard();if(modalPage==='achievements')renderAchievements();
 }
+const ACH=[
+['First 2K','score',2000,'smoke','Dirt Trail'],['First 5K','score',5000,'smoke','Red Trail'],['First 15K','score',15000,'atmos','Dark Mode'],['First 20K','score',20000,'coins',45000],
+['First 23K','score',23000,'smoke','Fire Trail'],['First 25K','score',25000,'smoke','Music Trail'],['First 28K','score',28000,'coins',100000],['First 30K','score',30000,'atmos','Tokyo'],['First 32K','score',32000,'smoke','Fishing Rod & Fish'],['First 35K','score',35000,'coins',300000],['First 38K','score',38000,'smoke','Blackout Void'],['First 40K','score',40000,'coins',500000],
+['25 Loops','loops',25,'smoke','Rollercoaster Tracks'],['300 Bananas','bananas',300,'smoke','Banana Trail'],['150 Green Drifts','green',150,'smoke','Slushie Drift'],['300 Red Pickups','red',300,'smoke','Money Trail']];
+const BONUS_SMOKE=['Dirt Trail','Red Trail','Fire Trail','Music Trail','Fishing Rod & Fish','Blackout Void','Rollercoaster Tracks','Banana Trail','Slushie Drift','Money Trail'];
+const BONUS_COLORS=['#a58965','#ff2e51','#ff8522','#935cff','#4fdbff','#05040b','#f8ce63','#ffe25c','#45e8ff','#38f58b'];
+const ALL_SMOKES=[...SMOKE_OPTIONS,...BONUS_SMOKE.map((name,i)=>[name,0,'Achievement-exclusive '+name,'rgba(196,215,244,','rgba(238,242,255,',6,1.1,1,820])];
+const BONUS_THEMES=[
+{name:'Dark Mode',price:0,desc:'Minimal dark asphalt and near-black sky',bg:['#020306','#090b10','#181b22','#020305'],glow:['#556174','#9aacc0'],deck:['#10131a','#1b2029','#101219'],neon:['#8092a8','#5d697b']},
+{name:'Tokyo',price:0,desc:'Tokyo-inspired neon streets, pink, violet and cyan',bg:['#06051b','#32105a','#ad1c6c','#070a22'],glow:['#ff4bac','#40f6ff'],deck:['#221e48','#48276b','#1b3750'],neon:['#ff72c1','#43fcf5']}];
+const ALL_THEMES=[...ATMOSPHERES,...BONUS_THEMES];
+function achProgress(a){return a[1]==='score'?Math.max(best,account.verifiedBest):Number(account.achievementCounts[a[1]])||0}
+function claimAchievement(i){const a=ACH[i];if(!a||account.achievementClaims.includes(i)||achProgress(a)<a[2])return;
+account.achievementClaims.push(i);
+if(a[3]==='coins')account.wallet+=a[4];
+if(a[3]==='smoke'){let idx=SMOKE_OPTIONS.length+BONUS_SMOKE.indexOf(a[4]);if(!account.smokeOwned.includes(idx))account.smokeOwned.push(idx)}
+if(a[3]==='atmos'){let idx=ATMOSPHERES.length+BONUS_THEMES.findIndex(x=>x.name===a[4]);if(!account.atmosOwned.includes(idx))account.atmosOwned.push(idx)}
+saveAccount();renderAchievements()}
+function renderAchievements(){modalContent.innerHTML='<p class="modalText">Reach milestone scores and collect special pickups to unlock exclusive drift effects and atmospheres. Claim once, keep forever.</p><div class="walletBar">✦ '+account.achievementClaims.length+' / '+ACH.length+' UNLOCKED · '+money(account.wallet)+' COINS</div><div class="achGrid">'+ACH.map((a,i)=>{const val=achProgress(a),done=val>=a[2],claimed=account.achievementClaims.includes(i);return '<div class="achCard '+(done?'done':'')+'"><h3>'+(done?'✦ ':'🔒 ')+a[0]+'</h3><p>REWARD: '+(a[3]==='coins'?money(a[4])+' coins':a[4])+'</p><div class="achBar"><b style="width:'+Math.min(100,100*val/a[2])+'%"></b></div><p>'+money(Math.min(val,a[2]))+' / '+money(a[2])+'</p><button data-ach="'+i+'" '+(!done||claimed?'disabled':'')+'>'+(claimed?'✓ CLAIMED':done?'CLAIM REWARD':'LOCKED')+'</button></div>'}).join('')+'</div>';for(const b of modalContent.querySelectorAll('[data-ach]'))b.addEventListener('click',()=>claimAchievement(+b.dataset.ach))}
 function renderShop(){
- const isSmoke=shopTab==='smoke',list=isSmoke?SMOKE_OPTIONS:ATMOSPHERES;
+ const isSmoke=shopTab==='smoke',list=isSmoke?ALL_SMOKES:ALL_THEMES;
  const previewIndex=isSmoke?(previewSmokeIndex??account.smokeEquipped):(previewAtmosIndex??account.atmosEquipped);
  const pv=list[previewIndex];
  const previewBox=isSmoke
@@ -553,15 +571,15 @@ function renderShop(){
  <div class="tierGrid">${list.map((v,i)=>{
  const name=isSmoke?v[0]:v.name,price=isSmoke?v[1]:v.price,desc=isSmoke?v[2]:v.desc,owns=garageFree||account[shopTab+'Owned'].includes(i),selected=account[shopTab+'Equipped']===i;
  const swatch=isSmoke?`<div class="themePreview" style="background:linear-gradient(90deg,${v[3]}0.88), ${v[4]}0.88))"></div>`:`<div class="themePreview" style="background:linear-gradient(90deg,${v.bg.join(',')})"></div>`;
- const afford=garageFree||account.wallet>=price;
- return `<div class="tierCard ${selected?'equipped':''}"><div class="tierTitle">${i+1}. ${name}</div>${swatch}<div class="tierSub">${desc}</div><div class="price">${price===0||garageFree?'FREE':money(price)+' coins'}</div><div class="tierActions"><button type="button" class="previewMini ${(previewIndex===i)?'active':''}" data-preview="${i}">${previewIndex===i?'PREVIEWING':'PREVIEW'}</button><button type="button" data-buy="${i}" ${selected?'disabled':''} ${(owns||afford)?'':'disabled'}>${selected?'✓ EQUIPPED':owns?'EQUIP':afford?'BUY':'NEED '+money(price-account.wallet)}</button></div></div>`;
+ const exclusive=isSmoke?i>=SMOKE_OPTIONS.length:i>=ATMOSPHERES.length,afford=!exclusive&&(garageFree||account.wallet>=price);
+ return `<div class="tierCard ${selected?'equipped':''}"><div class="tierTitle">${i+1}. ${name}</div>${swatch}<div class="tierSub">${desc}</div><div class="price">${price===0||garageFree?'FREE':money(price)+' coins'}</div><div class="tierActions"><button type="button" class="previewMini ${(previewIndex===i)?'active':''}" data-preview="${i}">${previewIndex===i?'PREVIEWING':'PREVIEW'}</button><button type="button" data-buy="${i}" ${selected?'disabled':''} ${(owns||afford)?'':'disabled'}>${selected?'✓ EQUIPPED':owns?'EQUIP':afford?'BUY':exclusive?'ACHIEVEMENT':'NEED '+money(price-account.wallet)}</button></div></div>`;
  }).join('')}</div>`;
  for(const b of modalContent.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>{shopTab=b.dataset.tab;previewSmokeIndex=null;previewAtmosIndex=null;renderShop()});
  for(const b of modalContent.querySelectorAll('[data-buy]'))b.addEventListener('click',()=>purchaseItem(+b.dataset.buy));
  for(const b of modalContent.querySelectorAll('[data-preview]'))b.addEventListener('click',()=>{if(shopTab==='smoke')previewSmokeIndex=+b.dataset.preview;else previewAtmosIndex=+b.dataset.preview;resize();renderShop()});
 }
 function purchaseItem(i){
- const list=shopTab==='smoke'?SMOKE_OPTIONS:ATMOSPHERES,item=list[i];if(!item)return;
+ const list=shopTab==='smoke'?ALL_SMOKES:ALL_THEMES,item=list[i];if(!item)return;if((shopTab==='smoke'?i>=SMOKE_OPTIONS.length:i>=ATMOSPHERES.length)&&!account[shopTab+'Owned'].includes(i))return;
  const price=shopTab==='smoke'?item[1]:item.price,owned=account[shopTab+'Owned'];
  if(!owned.includes(i)){
   if(!garageFree&&account.wallet<price)return;
@@ -575,17 +593,17 @@ function purchaseItem(i){
 function renderProfile(){
  modalContent.innerHTML=`<p class="modalText">Choose a name or nickname other players will recognise on the public leaderboard. <b>Use a nickname instead of your full real name</b> because everyone can see it. Tap the car on the home screen to open this profile quickly.</p>
  <form id="playerForm"><input id="nameInput" maxlength="18" autocomplete="nickname" spellcheck="false" placeholder="Your racing nickname" value="${account.nickname.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" /><button type="submit" class="primaryMini">SAVE NAME</button></form>
- <div id="profileNote">${account.nickname?'Playing as '+account.nickname:'Choose a name to appear on the online leaderboard.'}</div>
+ <p class="modalText">Optional full name (public; shown subtly beside your nickname). You can leave this blank.</p><input id="fullNameInput" maxlength="48" placeholder="Optional full name" value="${String(account.fullName||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\"/g,'&quot;')}" /><label class="modalText" style="display:block;margin:10px 0"><input type="checkbox" id="showFullName" ${account.showFullName?'checked':''} /> Display my full name publicly</label><div id="profileNote">${account.nickname?'Playing as '+account.nickname:'Choose a name to appear on the online leaderboard.'}</div>
  <div class="walletBar" style="margin-top:18px">BEST CLASSIC: ${money(best)} · Verified without cheat keys: ${money(account.verifiedBest)} · Wallet: ${money(account.wallet)}</div>
  <p class="modalText">Only runs played after this online version is published count toward the worldwide rankings. The server checks game time and rejects impossible instant scores, but no browser game can be completely cheat-proof. Your garage and coins remain saved on this device.</p>`;
- $('playerForm').addEventListener('submit',e=>{e.preventDefault();const name=cleanName($('nameInput').value);if(name.length<2){$('profileNote').textContent='Choose at least 2 characters.';return;}account.nickname=name;saveAccount();$('profileNote').textContent='Saved! Your public nickname is '+name+'. Your next completed run can appear worldwide.';publishScore(true);});
+ $('playerForm').addEventListener('submit',e=>{e.preventDefault();const name=cleanName($('nameInput').value);if(name.length<2){$('profileNote').textContent='Choose at least 2 characters.';return;}account.nickname=name;account.fullName=String($('fullNameInput').value||'').trim().slice(0,48);account.showFullName=$('showFullName').checked&&account.fullName.length>=3;saveAccount();$('profileNote').textContent='Saved! Your public nickname is '+name+'. Your next completed run can appear worldwide.';publishScore(true);});
 }
 function renderBoard(){
  const rows=(onlineApi?globalBoard:(account.nickname&&account.verifiedBest>0?[{name:account.nickname,score:account.verifiedBest}]:[])).slice(0,50);
  const escapeHTML=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  modalContent.innerHTML=`<p class="modalText"><b>WORLDWIDE CLASSIC HIGH SCORES</b> · Everyone playing on this Netlify site competes on this same board. Choose a nickname by clicking the car on the main menu. Scores are submitted after each finished run.</p>
  <div class="walletBar" id="leaderboardNote" style="color:#baffea">${escapeHTML(boardStatus)}</div>
- <div>${rows.length?rows.map((s,i)=>`<div class="leaderRow ${s.name===account.nickname?'self':''}"><span class="rank">#${i+1}</span><span>${escapeHTML(s.name)}</span><strong>${money(s.score)}</strong></div>`).join(''):'<p class="modalText">No public scores yet. Be the first to complete a run!</p>'}</div>
+ <div>${rows.length?rows.map((s,i)=>`<div class="leaderRow ${s.name===account.nickname?'self':''}"><span class="rank">#${i+1}</span><span>${escapeHTML(s.name)}${s.fullName?'<span class="leaderReal">'+escapeHTML(s.fullName)+'</span>':''}</span><strong>${money(s.score)}</strong></div>`).join(''):'<p class="modalText">No public scores yet. Be the first to complete a run!</p>'}</div>
  ${!account.nickname?'<button type="button" class="primaryMini" id="boardSetName" style="margin:17px 0 0">CHOOSE MY NICKNAME</button>':''}
  <button type="button" class="primaryMini" id="boardRefresh" style="margin:17px 0 0">REFRESH LIVE SCORES</button>`;
  const setName=$('boardSetName');if(setName)setName.addEventListener('click',()=>{modalPage='profile';renderModal()});
@@ -606,9 +624,9 @@ async function loadBoard(){
 async function initOnlineLeaderboard(){
  onlineApi={
   load:()=>competitionRequest(),
-  start:name=>competitionRequest({action:'start',playerId:competitionId,name}),
-  finish:(runId,score,seconds,name)=>competitionRequest({action:'finish',playerId:competitionId,runId,score,seconds,name}),
-  rename:name=>competitionRequest({action:'rename',playerId:competitionId,name})
+  start:name=>competitionRequest({action:'start',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName}),
+  finish:(runId,score,seconds,name)=>competitionRequest({action:'finish',playerId:competitionId,runId,score,seconds,name,fullName:account.fullName,showFullName:account.showFullName}),
+  rename:name=>competitionRequest({action:'rename',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName})
  };
  try{const data=await onlineApi.load();globalBoard=data.top||[];boardStatus='LIVE WORLDWIDE · '+(data.players||0)+' RACERS';onlineNoticeEl.textContent='LIVE WORLDWIDE LEADERBOARD';}
  catch(e){boardStatus='OFFLINE PREVIEW · Publish the Netlify Functions to activate global scores.';onlineNoticeEl.textContent='ONLINE LEADERBOARD NOT CONNECTED';console.warn('Leaderboard not yet connected:',e)}
@@ -741,7 +759,7 @@ function updateGreenStay(dt){
  if(id!==null&&!greenDriftAwarded.has(id)&&!player.fallingOff){
   greenDriftTime=Math.min(GREEN_STAY_SECONDS,greenDriftTime+dt);
   if(greenDriftTime>=GREEN_STAY_SECONDS){
-   greenDriftAwarded.add(id);
+   greenDriftAwarded.add(id);account.achievementCounts.green++;saveAccount();
    collectCoin(15);
    greenRewardFlash=1.2;
    screenShake=.08;
@@ -800,7 +818,7 @@ function updateActiveLoop(dt){
 
  level.textContent='ORANGE LOOP  ·  '+Math.floor(u*100)+'%';level.style.color='#ffc06a';
  if(u>=1){
-  l.active=false;l.done=true;activeLoop=null;
+  l.active=false;l.done=true;activeLoop=null;account.achievementCounts.loops++;saveAccount();
   player.loopPitch=0;player.y=0;
   // Exit gently on the same continuous branch after the full revolution.
   if(l.dir==='z')player.z=l.z+2.8;else player.x=l.x+2.8;
