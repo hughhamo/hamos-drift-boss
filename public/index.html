@@ -208,7 +208,7 @@ const CAR_STYLES=[
  {name:'PROTOTYPE',paint:['#f6f7fa','#7b8dab','#ffffff','#d8dfe8','#4b6292'],roof:'#ffffff',glass:'#1c466f',trim:'#76fff3'},
  {name:'LEGEND',paint:['#72ffbb','#108f80','#baffd9','#44dca3','#18716b'],roof:'#eafff5',glass:'#16425d',trim:'#fcf8ad'}
 ];
-function currentStyle(){return CAR_STYLES[Math.min(carTier,CAR_STYLES.length-1)]}
+function currentStyle(){if(state==='menu'){const th=activeTheme();return {...CAR_STYLES[0],paint:[th.neon[0],th.neon[1],th.neon[0],th.neon[1],th.neon[0]],roof:'#defaff',trim:th.neon[1]}}return CAR_STYLES[Math.min(carTier,CAR_STYLES.length-1)]}
 function carLabel(){return carTier<6?currentStyle().name:'LEGEND MK '+(carTier-4)}
 const COINS_PER_UPGRADE=30;
 // The displayed speed is rounded from physics speed * 3.8.
@@ -516,7 +516,7 @@ function showMainMenu(){
 backToModes.addEventListener('click',showMainMenu);
 // Fullscreen menu remains touch-friendly. Mode tabs only select a mode;
 // tapping anywhere else on the intro starts the chosen race or classic run.
-function isCarHit(clientX,clientY){const r=canvas.getBoundingClientRect();return Math.abs(clientX-r.left-W*.5)<Math.min(W*.23,170)&&Math.abs(clientY-r.top-H*.69)<Math.min(H*.23,136)}
+function isCarHit(clientX,clientY){const r=canvas.getBoundingClientRect(),p=project(vec(player.x,2,player.z));if(!p)return false;return Math.abs(clientX-r.left-p.x)<Math.max(95,Math.min(185,3100/p.depth))&&Math.abs(clientY-r.top-p.y)<Math.max(80,Math.min(145,2500/p.depth))}
 overlay.addEventListener('pointerdown',e=>{
  if(state!=='menu')return;
  if(e.target.closest('.panel')){e.preventDefault();restart();return}
@@ -1341,7 +1341,7 @@ function local(x,y,z){
  const xr=x*cr-y*sr,yr=x*sr+y*cr;
  const yp=yr*cp-z*sp,zp=yr*sp+z*cp;
  // Banana spin is a cosmetic yaw only. The real player.heading still controls physics.
- const displayHeading=player.heading+(activeLoop?0:bananaSpinAngle);
+ const displayHeading=state==='menu'?menuYaw:player.heading+(activeLoop?0:bananaSpinAngle);
  const si=Math.sin(displayHeading),co=Math.cos(displayHeading);
  return vec(player.x+co*xr+si*zp,yp+player.y,player.z-si*xr+co*zp);
 }
@@ -1511,7 +1511,7 @@ function drawPedestal(){
  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(p.x,p.y+12,w,h,0,0,TAU);ctx.fill();
  ctx.strokeStyle='rgba(188,240,255,.33)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,p.y+12,w,h,0,0,TAU);ctx.stroke();
 }
-function render(dt){updateCamera(dt);ctx.drawImage(background,0,0,W,H);const underRoad=(player.y<-.055&&(player.fallingOff||state==='falling')&&!activeLoop);if(underRoad)drawCar();drawRoad();if(state==='menu')drawShowroomCar();drawLoops();drawBananas();drawCoins();drawSkids();drawFxRibbon();drawBonusTrail();if(!underRoad&&state!=='menu')drawCar();drawAttachedFX();if(state==='menu'){const g=ctx.createLinearGradient(0,H*.18,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.26)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}else if(state==='playing'){if(activeLoop){ctx.fillStyle='rgba(255,153,34,.055)';ctx.fillRect(0,0,W,H)}else if(player.boost>.02){let a=clamp(player.boost*.18,0,.09);ctx.fillStyle='rgba(255,70,178,'+a+')';ctx.fillRect(0,0,W,H)}else if(driftLeft>.25){let a=clamp((driftLeft-.25)/.41,0,1)*.042;ctx.fillStyle='rgba(248,164,77,'+a+')';ctx.fillRect(0,0,W,H)}}}
+function render(dt){updateCamera(dt);ctx.drawImage(background,0,0,W,H);const underRoad=(player.y<-.055&&(player.fallingOff||state==='falling')&&!activeLoop);if(underRoad)drawCar();drawRoad();if(state==='menu'){drawPedestal();drawCar()}drawLoops();drawBananas();drawCoins();drawSkids();drawFxRibbon();drawBonusTrail();if(!underRoad&&state!=='menu')drawCar();drawAttachedFX();if(state==='menu'){const g=ctx.createLinearGradient(0,H*.18,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.26)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}else if(state==='playing'){if(activeLoop){ctx.fillStyle='rgba(255,153,34,.055)';ctx.fillRect(0,0,W,H)}else if(player.boost>.02){let a=clamp(player.boost*.18,0,.09);ctx.fillStyle='rgba(255,70,178,'+a+')';ctx.fillRect(0,0,W,H)}else if(driftLeft>.25){let a=clamp((driftLeft-.25)/.41,0,1)*.042;ctx.fillStyle='rgba(248,164,77,'+a+')';ctx.fillRect(0,0,W,H)}}}
 const FIX=1/120;
 let lastPreviewAt=0;
 function drawGaragePreview(ts){
