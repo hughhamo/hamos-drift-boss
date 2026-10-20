@@ -107,6 +107,20 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 .achievementSwatch::after{content:attr(data-symbol);position:absolute;right:14px;top:7px;font-size:28px;filter:drop-shadow(0 0 10px var(--swatch2));animation:swatchFloat 2.5s ease-in-out infinite alternate}
 @keyframes swatchDrift{to{transform:translateY(8px) rotate(-11deg)}}@keyframes swatchFloat{to{transform:translateY(10px) rotate(12deg)}}
 @media(max-width:620px){.achGrid{grid-template-columns:1fr!important}.achCard{min-height:180px}}
+
+.menuTools button{border:1px solid #8feeff99!important;background:linear-gradient(140deg,#233a59ed,#0a162be8)!important;box-shadow:inset 0 1px 13px #85dfff23,0 12px 28px #0009,0 0 24px #67e8ff27!important;transition:filter .18s,transform .18s!important}
+.menuTools button:hover{filter:brightness(1.24)}.menuTools button span{white-space:nowrap;letter-spacing:.08em!important;text-shadow:0 0 8px #92dfff55}
+#openShopMenu{left:28px!important;top:41%!important;width:117px!important;height:117px!important}
+#openAchievementsMenu{left:35px!important;top:68%!important;width:102px!important;height:102px!important;transform:translateY(-50%)!important;border-color:#d9abff9a!important;background:linear-gradient(140deg,#35244deb,#0a1529f4)!important}
+#openAchievementsMenu:hover{transform:translateY(-50%) scale(1.05)!important}#openAchievementsMenu span{font-size:9px!important}
+.tierCard{background:linear-gradient(150deg,#1c3148dc,#0c172bea)!important;box-shadow:0 7px 15px #0003;transition:transform .2s}.tierCard:hover{transform:translateY(-2px);border-color:#97eaff80!important}
+.themePreview:not(.achievementSwatch){height:58px!important;border-radius:11px!important;position:relative;overflow:hidden}
+.themePreview:not(.achievementSwatch)::after{content:'✦    ╱╱    ✦';position:absolute;top:12px;left:15px;color:#e5ffffcf;font-size:20px;letter-spacing:.3em;text-shadow:0 0 15px #8cfaff}
+.leaderRow{margin:7px 0!important;padding:13px!important;border-radius:12px!important;border:1px solid #79cbed48!important;background:linear-gradient(110deg,#1b3150,#0c172c)!important}
+.leaderRow:nth-child(1){border-color:#ffe6a076!important;background:linear-gradient(90deg,#47361c,#1a2439)!important}
+.leaderRow:nth-child(2){border-color:#d5e8ef66!important}.leaderRow:nth-child(3){border-color:#f3bc9266!important}.leaderRow strong{font-size:15px}.leaderRow .rank{font-size:16px}.leaderReal{display:block;margin:2px 0 0!important}
+#modalWindow{border-color:#83ebf597!important;box-shadow:0 28px 85px #000c,0 0 20px #75dafe14!important}
+@media(max-width:620px){#openShopMenu{left:9px!important;top:43%!important;width:91px!important;height:91px!important}#openAchievementsMenu{left:10px!important;top:66%!important;width:90px!important;height:90px!important}#openAchievementsMenu span{font-size:8px!important}}
 </style>
 </head>
 <body>
@@ -502,7 +516,7 @@ function showMainMenu(){
 backToModes.addEventListener('click',showMainMenu);
 // Fullscreen menu remains touch-friendly. Mode tabs only select a mode;
 // tapping anywhere else on the intro starts the chosen race or classic run.
-function isCarHit(clientX,clientY){const r=canvas.getBoundingClientRect(),p=project(vec(player.x,1.0,player.z));if(!p)return false;return Math.abs(clientX-r.left-p.x)<Math.max(120,Math.min(190,2000/p.depth))&&Math.abs(clientY-r.top-p.y)<Math.max(95,Math.min(145,1600/p.depth))}
+function isCarHit(clientX,clientY){const r=canvas.getBoundingClientRect();return Math.abs(clientX-r.left-W*.5)<Math.min(W*.23,170)&&Math.abs(clientY-r.top-H*.69)<Math.min(H*.23,136)}
 overlay.addEventListener('pointerdown',e=>{
  if(state!=='menu')return;
  if(e.target.closest('.panel')){e.preventDefault();restart();return}
@@ -673,9 +687,9 @@ function renderProfile(){
 function renderBoard(){
  const rows=(onlineApi?globalBoard:(account.nickname&&account.verifiedBest>0?[{name:account.nickname,score:account.verifiedBest}]:[])).slice(0,50);
  const escapeHTML=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
- modalContent.innerHTML=`<p class="modalText"><b>WORLDWIDE CLASSIC HIGH SCORES</b> · Everyone playing on this Netlify site competes on this same board. Choose a nickname by clicking the car on the main menu. Scores are submitted after each finished run.</p>
+ modalContent.innerHTML=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:15px"><span style="font-size:34px">🏆</span><div><div style="font-size:18px;font-weight:950;letter-spacing:.08em">WORLDWIDE HALL OF FAME</div><div class="tierSub">CLASSIC · ALL-TIME TOP 50 · HIGH SCORES</div></div></div>
  <div class="walletBar" id="leaderboardNote" style="color:#baffea">${escapeHTML(boardStatus)}</div>
- <div>${rows.length?rows.map((s,i)=>`<div class="leaderRow ${s.name===account.nickname?'self':''}"><span class="rank">#${i+1}</span><span>${escapeHTML(s.name)}${s.fullName?'<span class="leaderReal">'+escapeHTML(s.fullName)+'</span>':''}</span><strong>${money(s.score)}</strong></div>`).join(''):'<p class="modalText">No public scores yet. Be the first to complete a run!</p>'}</div>
+ <div>${rows.length?rows.map((s,i)=>`<div class="leaderRow ${s.name===account.nickname?'self':''}"><span class="rank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</span><span>${escapeHTML(s.name)}${s.fullName?'<span class="leaderReal">'+escapeHTML(s.fullName)+'</span>':''}</span><strong>${money(s.score)}</strong></div>`).join(''):'<p class="modalText">No public scores yet. Be the first to complete a run!</p>'}</div>
  ${!account.nickname?'<button type="button" class="primaryMini" id="boardSetName" style="margin:17px 0 0">CHOOSE MY NICKNAME</button>':''}
  <button type="button" class="primaryMini" id="boardRefresh" style="margin:17px 0 0">REFRESH LIVE SCORES</button>`;
  const setName=$('boardSetName');if(setName)setName.addEventListener('click',()=>{modalPage='profile';renderModal()});
@@ -1432,6 +1446,21 @@ function drawStar(c,x,y,size,color,opacity){
  c.save();c.globalAlpha=opacity;c.fillStyle=color;c.beginPath();c.moveTo(x,y-size);c.lineTo(x+size*.22,y-size*.24);c.lineTo(x+size,y);c.lineTo(x+size*.22,y+size*.22);c.lineTo(x,y+size);c.lineTo(x-size*.22,y+size*.22);c.lineTo(x-size,y);c.lineTo(x-size*.22,y-size*.22);c.closePath();c.fill();c.restore();
 }
 
+let menuYaw=0;
+function drawShowroomCar(){
+ const x=W*.5,y=H*.69,r=Math.min(W*.19,H*.21,124),theme=activeTheme();
+ ctx.save();const glow=ctx.createRadialGradient(x,y+25,5,x,y+25,r*1.65);glow.addColorStop(0,theme.neon[0]+'8a');glow.addColorStop(1,'#060e1b00');
+ ctx.fillStyle=glow;ctx.beginPath();ctx.ellipse(x,y+29,r*1.53,r*.53,0,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle=theme.neon[1]+'a9';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+29,r*1.34,r*.41,0,0,Math.PI*2);ctx.stroke();
+ ctx.translate(x,y-8);ctx.rotate(menuYaw);
+ ctx.fillStyle='#050a16';for(const z of [-.54,.54])for(const side of [-1,1])ctx.fillRect(side*r*.34-r*.11,z*r-r*.21,r*.22,r*.42);
+ ctx.shadowColor=theme.neon[0];ctx.shadowBlur=13;ctx.fillStyle=theme.neon[0];ctx.beginPath();ctx.roundRect(-r*.41,-r*.77,r*.82,r*1.54,r*.16);ctx.fill();ctx.shadowBlur=0;
+ ctx.fillStyle='#15253c';ctx.beginPath();ctx.roundRect(-r*.32,-r*.3,r*.64,r*.69,r*.08);ctx.fill();
+ ctx.fillStyle='#90e5fa';ctx.fillRect(-r*.29,-r*.24,r*.58,r*.17);
+ ctx.fillStyle=theme.neon[1];ctx.fillRect(-r*.29,-r*.76,r*.18,r*.08);ctx.fillRect(r*.11,-r*.76,r*.18,r*.08);
+ ctx.fillStyle='#fff0b8';ctx.fillRect(-r*.27,r*.68,r*.16,r*.07);ctx.fillRect(r*.11,r*.68,r*.16,r*.07);
+ ctx.restore();
+}
 function drawPedestal(){
  const p=project(vec(player.x,0,player.z));if(!p)return;
  const w=Math.max(105,310/(p.depth/8+2)),h=w*.26;
@@ -1440,7 +1469,7 @@ function drawPedestal(){
  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(p.x,p.y+12,w,h,0,0,TAU);ctx.fill();
  ctx.strokeStyle='rgba(188,240,255,.33)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,p.y+12,w,h,0,0,TAU);ctx.stroke();
 }
-function render(dt){updateCamera(dt);ctx.drawImage(background,0,0,W,H);const underRoad=(player.y<-.055&&(player.fallingOff||state==='falling')&&!activeLoop);if(underRoad)drawCar();drawRoad();if(state==='menu')drawPedestal();drawLoops();drawBananas();drawCoins();drawSkids();if(!underRoad)drawCar();drawAttachedFX();if(state==='menu'){const g=ctx.createLinearGradient(0,H*.18,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.26)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}else if(state==='playing'){if(activeLoop){ctx.fillStyle='rgba(255,153,34,.055)';ctx.fillRect(0,0,W,H)}else if(player.boost>.02){let a=clamp(player.boost*.18,0,.09);ctx.fillStyle='rgba(255,70,178,'+a+')';ctx.fillRect(0,0,W,H)}else if(driftLeft>.25){let a=clamp((driftLeft-.25)/.41,0,1)*.042;ctx.fillStyle='rgba(248,164,77,'+a+')';ctx.fillRect(0,0,W,H)}}}
+function render(dt){updateCamera(dt);ctx.drawImage(background,0,0,W,H);const underRoad=(player.y<-.055&&(player.fallingOff||state==='falling')&&!activeLoop);if(underRoad)drawCar();drawRoad();if(state==='menu')drawShowroomCar();drawLoops();drawBananas();drawCoins();drawSkids();if(!underRoad&&state!=='menu')drawCar();drawAttachedFX();if(state==='menu'){const g=ctx.createLinearGradient(0,H*.18,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.26)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}else if(state==='playing'){if(activeLoop){ctx.fillStyle='rgba(255,153,34,.055)';ctx.fillRect(0,0,W,H)}else if(player.boost>.02){let a=clamp(player.boost*.18,0,.09);ctx.fillStyle='rgba(255,70,178,'+a+')';ctx.fillRect(0,0,W,H)}else if(driftLeft>.25){let a=clamp((driftLeft-.25)/.41,0,1)*.042;ctx.fillStyle='rgba(248,164,77,'+a+')';ctx.fillRect(0,0,W,H)}}}
 const FIX=1/120;
 let lastPreviewAt=0;
 function drawGaragePreview(ts){
@@ -1480,7 +1509,7 @@ function drawGaragePreview(ts){
  c.save();c.translate(w*.73,h*.36);c.rotate(-.24);c.shadowColor='#34f9ff';c.shadowBlur=14;c.fillStyle='#19bad1';c.fillRect(-41,-21,92,48);c.fillStyle='#bff9ff';c.fillRect(-20,-18,47,37);c.fillStyle='#0b1d39';c.fillRect(16,-11,15,22);c.fillStyle='#061521';c.fillRect(-38,-25,22,6);c.fillRect(22,-25,22,6);c.fillRect(-38,27,22,6);c.fillRect(22,27,22,6);c.restore();
 }
 function frame(ts){if(!last)last=ts;let dt=Math.min(.05,(ts-last)/1000);last=ts;
-if(state==='menu'){player.heading=(player.heading+dt*.7)%TAU;player.tilt=0;player.edgeRoll=0;player.edgePitch=0;player.loopPitch=0;player.y=0}accumulator=Math.min(.07,accumulator+dt);let n=0;while(accumulator>=FIX&&n<7){update(FIX);accumulator-=FIX;n++}render(dt);drawGaragePreview(ts);requestAnimationFrame(frame)}
+if(state==='menu'){menuYaw=(menuYaw+dt*.58)%TAU;player.tilt=0;player.edgeRoll=0;player.edgePitch=0;player.loopPitch=0;player.y=0}accumulator=Math.min(.07,accumulator+dt);let n=0;while(accumulator>=FIX&&n<7){update(FIX);accumulator-=FIX;n++}render(dt);drawGaragePreview(ts);requestAnimationFrame(frame)}
 resize();initOnlineLeaderboard();prepareRoad();player={x:.8,z:10.8,y:0,vx:0,vz:0,vy:0,heading:.58,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};state='menu';shell.classList.add('menu');overlay.classList.add('intro');play.style.display='none';updateCoinHud();updateSpeedHud();requestAnimationFrame(frame);
 window.DriftBossDebug={
  start:restart,step:dt=>{for(let t=0;t<dt;t+=FIX)update(FIX)},steer:v=>{held=!!v},showMenu:showMainMenu,
