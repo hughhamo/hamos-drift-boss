@@ -86,6 +86,27 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 #resetWarning{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:#040912df;backdrop-filter:blur(11px);padding:20px}#resetWarning.active{display:flex}#resetWarning .resetPanel{max-width:440px;width:100%;background:linear-gradient(145deg,#1f253b,#0b1120);border:1px solid #ff778d88;border-radius:22px;padding:28px;box-shadow:0 20px 75px #000c;text-align:center}#resetWarning h2{font-size:22px;color:#ff879a;margin:6px 0 12px}#resetWarning p{font-size:14px;line-height:1.6;color:#d9e2ef}#resetWarning .resetActions{display:flex;gap:10px;margin-top:22px}#resetWarning button{flex:1;padding:13px 8px;border:1px solid #9bbad544;border-radius:11px;background:#24364b;color:#edf7ff;font-weight:900;cursor:pointer}#resetWarning #confirmReset{background:#ed4960;color:white;border-color:#ff9aaa}#resetWarning button:disabled{opacity:.55;cursor:default}
 
 #perkToast{position:absolute;top:calc(env(safe-area-inset-top,0px) + 80px);left:50%;transform:translate(-50%,-10px) scale(.95);z-index:22;max-width:min(90vw,610px);padding:14px 22px;border-radius:15px;background:linear-gradient(135deg,#101933ed,#123c3fe9);border:1px solid #6cffca88;box-shadow:0 12px 38px #0009,0 0 26px #30f1bd36;color:#bffff0;font-size:13px;font-weight:950;letter-spacing:.09em;text-align:center;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;backdrop-filter:blur(12px)}#perkToast.visible{opacity:1;transform:translate(-50%,0) scale(1)}
+
+.achGrid{gap:14px!important}
+.achCard{position:relative;overflow:hidden;min-height:198px;border-radius:18px!important;padding:16px!important;background:radial-gradient(circle at 82% 5%,var(--achglow,#4877a2) 0%,transparent 54%),linear-gradient(155deg,#182941,#0a1228 76%)!important;border:1px solid color-mix(in srgb,var(--achaccent,#64bfff) 50%,#172437)!important;box-shadow:0 8px 25px #0005;transition:transform .2s,border-color .2s}
+.achCard:hover{transform:translateY(-2px)}
+.achCard.done{border-color:color-mix(in srgb,var(--achaccent,#7fffc3) 82%,#fff)!important;box-shadow:0 0 20px color-mix(in srgb,var(--achaccent,#7fffc3) 16%,transparent),inset 0 0 30px #ffffff06}
+.achArt{height:48px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.achEmblem{display:grid;place-items:center;width:52px;height:52px;border-radius:15px;background:linear-gradient(145deg,color-mix(in srgb,var(--achaccent) 34%,#132139),#0a1325);border:1px solid color-mix(in srgb,var(--achaccent) 65%,transparent);font-size:27px;box-shadow:0 0 24px color-mix(in srgb,var(--achaccent) 18%,transparent)}
+.achStatus{letter-spacing:.1em;font-size:9px;font-weight:950;color:var(--achaccent);background:#080f1dbc;padding:6px 9px;border-radius:40px;border:1px solid color-mix(in srgb,var(--achaccent) 40%,transparent)}
+.achCard h3{font-size:16px!important;letter-spacing:.012em}
+.achCard .achReward{color:#f0f6ff!important;font-size:12px!important}
+.achCard .achBar{background:#06101e!important;height:8px;border:1px solid #ffffff14}
+.achCard .achBar b{background:linear-gradient(90deg,var(--achaccent),color-mix(in srgb,var(--achaccent) 45%,white))!important;box-shadow:0 0 14px var(--achaccent)}
+.achCard button{width:100%;font-size:11px;letter-spacing:.09em;background:var(--achaccent);padding:11px!important;margin-top:5px;cursor:pointer}
+.achCard.done button:disabled{background:color-mix(in srgb,var(--achaccent) 20%,#192940);color:#cbf5df}
+.achSection{grid-column:1/-1;margin:12px 2px 2px;display:flex;align-items:center;gap:9px;color:#f5faff;font-weight:950;letter-spacing:.13em;font-size:12px}
+.achSection::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#76eaff6e,transparent)}
+.achievementSwatch{position:relative;height:60px!important;border-radius:12px!important;overflow:hidden;background:radial-gradient(ellipse at 70% 40%,var(--swatch2),transparent 65%),linear-gradient(130deg,#061020,var(--swatch1) 65%,#0b1324)!important;box-shadow:inset 0 0 25px #0007,0 0 12px color-mix(in srgb,var(--swatch2) 30%,transparent)}
+.achievementSwatch::before{content:"";position:absolute;left:4%;top:48%;width:92%;height:8px;border-top:2px solid var(--swatch2);border-bottom:2px solid var(--swatch1);transform:rotate(-8deg);border-radius:40%;box-shadow:0 0 13px var(--swatch2);animation:swatchDrift 2.6s ease-in-out infinite alternate}
+.achievementSwatch::after{content:attr(data-symbol);position:absolute;right:14px;top:7px;font-size:28px;filter:drop-shadow(0 0 10px var(--swatch2));animation:swatchFloat 2.5s ease-in-out infinite alternate}
+@keyframes swatchDrift{to{transform:translateY(8px) rotate(-11deg)}}@keyframes swatchFloat{to{transform:translateY(10px) rotate(12deg)}}
+@media(max-width:620px){.achGrid{grid-template-columns:1fr!important}.achCard{min-height:180px}}
 </style>
 </head>
 <body>
@@ -594,7 +615,18 @@ if(a[3]==='coins'&&!garageFree)account.wallet+=a[4];
 if(a[3]==='smoke'){let idx=SMOKE_OPTIONS.length+BONUS_SMOKE.indexOf(a[4]);if(!account.smokeOwned.includes(idx))account.smokeOwned.push(idx)}
 if(a[3]==='atmos'){let idx=ATMOSPHERES.length+BONUS_THEMES.findIndex(x=>x.name===a[4]);if(!account.atmosOwned.includes(idx))account.atmosOwned.push(idx)}
 if(!garageFree)saveAccount();renderAchievements()}
-function renderAchievements(){modalContent.innerHTML='<p class="modalText">Reach milestone scores and collect special pickups to unlock exclusive drift effects and atmospheres. Claim once, keep forever.</p><div class="walletBar">✦ '+account.achievementClaims.length+' / '+ACH.length+' UNLOCKED · '+money(account.wallet)+' COINS</div><div class="achGrid">'+ACH.map((a,i)=>{const val=achProgress(a),done=garageFree||val>=a[2],claimed=account.achievementClaims.includes(i),secretUnlocked=garageFree;return '<div class="achCard '+(done?'done':'')+'"><h3>'+(done?'✦ ':'🔒 ')+a[0]+'</h3><p>REWARD: '+(a[3]==='coins'?money(a[4])+' coins':a[4])+'</p><div class="achBar"><b style="width:'+Math.min(100,100*val/a[2])+'%"></b></div><p>'+money(Math.min(val,a[2]))+' / '+money(a[2])+'</p><button data-ach="'+i+'" '+(!done||claimed?'disabled':'')+'>'+(claimed?'✓ CLAIMED':done?'CLAIM REWARD':'LOCKED')+'</button></div>'}).join('')+'</div>';for(const b of modalContent.querySelectorAll('[data-ach]'))b.addEventListener('click',()=>claimAchievement(+b.dataset.ach))}
+function renderAchievements(){
+ const icons=['🛞','🏎️','🌑','🪙','🔥','🎵','💰','🌃','🎣','💎','🕳️','👑','🎢','🍌','🥤','💸'];
+ const colors=['#bd996c','#ff5263','#818aa8','#ffcd58','#ff7a39','#b281ff','#65e8ae','#fc65df','#6fd9ff','#70efbd','#9373cf','#ffd77a','#ffd655','#ffe251','#68e6ff','#4aea86'];
+ const unlocked=account.achievementClaims.length;
+ modalContent.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:13px"><div><div style="font-weight:950;font-size:20px">THE ACHIEVEMENT VAULT</div><p class="tierSub">Hit milestones. Unlock exclusive trails, atmospheric worlds and coin prizes.</p></div><div class="walletBar">✦ '+unlocked+'/'+ACH.length+' CLAIMED · '+money(account.wallet)+' COINS</div></div>'
+ +'<div class="achGrid">'+ACH.map((a,i)=>{
+ const current=achProgress(a),done=garageFree||current>=a[2],claimed=account.achievementClaims.includes(i),pct=claimed||done?100:Math.min(100,Math.floor(100*current/a[2]));
+ return (i===0?'<div class="achSection">🏁 SCORE CHALLENGES</div>':i===12?'<div class="achSection">✨ SPECIAL CHALLENGES</div>':'')
+ +'<article class="achCard '+(done?'done':'')+'" style="--achaccent:'+colors[i]+';--achglow:color-mix(in srgb,'+colors[i]+' 20%,transparent)"><div class="achArt"><div class="achEmblem">'+icons[i]+'</div><span class="achStatus">'+(claimed?'COMPLETED':done?'READY TO CLAIM':'LOCKED')+'</span></div><h3>'+a[0]+'</h3><p class="achReward">'+(a[3]==='coins'?'🪙 '+money(a[4])+' BONUS COINS':a[3]==='atmos'?'🌌 '+a[4]+' ATMOSPHERE':'✦ '+a[4]+' TRAIL')+'</p><div class="achBar"><b style="width:'+pct+'%"></b></div><p>'+money(Math.min(current,a[2]))+' / '+money(a[2])+' '+(a[1]==='score'?'POINTS':a[1].toUpperCase())+'</p><button data-ach="'+i+'" '+(!done||claimed?'disabled':'')+'>'+(claimed?'✓ UNLOCKED':done?'CLAIM REWARD':'KEEP DRIVING')+'</button></article>';
+ }).join('')+'</div>';
+ for(const b of modalContent.querySelectorAll('[data-ach]'))b.addEventListener('click',()=>claimAchievement(+b.dataset.ach));
+}
 function renderShop(){
  const isSmoke=shopTab==='smoke',list=isSmoke?ALL_SMOKES:ALL_THEMES;
  const previewIndex=isSmoke?(previewSmokeIndex??account.smokeEquipped):(previewAtmosIndex??account.atmosEquipped);
@@ -607,7 +639,10 @@ function renderShop(){
  <p class="modalText">Earn coins from driving. Every item is a permanent unlock. Use PREVIEW before buying to see the style. Buying garage items never affects your current run’s car upgrades.</p>${previewBox}
  <div class="tierGrid">${list.map((v,i)=>{
  const name=isSmoke?v[0]:v.name,price=isSmoke?v[1]:v.price,desc=isSmoke?v[2]:v.desc,owns=account[shopTab+'Owned'].includes(i)||garageFree,selected=account[shopTab+'Equipped']===i;
- const swatch=isSmoke?`<div class="themePreview" style="background:linear-gradient(90deg,${v[3]}0.88), ${v[4]}0.88))"></div>`:`<div class="themePreview" style="background:linear-gradient(90deg,${v.bg.join(',')})"></div>`;
+ const achIndex=isSmoke?i-SMOKE_OPTIONS.length:-1,achSymbols=['🛞','🏎️','🔥','🎵','🎣','🕳️','🎢','🍌','🥤','💸'],swatch=isSmoke&&achIndex>=0
+ ?'<div class="themePreview achievementSwatch" data-symbol="'+achSymbols[achIndex]+'" style="--swatch1:'+BONUS_COLORS[achIndex]+';--swatch2:'+(achIndex===5?'#9e8ceb':['#e9c79a','#ff8d98','#ffd958','#5ff5fc','#b6fcff','#4b376d','#e7fdff','#fff7ad','#ffacd9','#b9ffcc'][achIndex])+'"></div>'
+ :isSmoke?'<div class="themePreview" style="background:linear-gradient(90deg,#263448,'+(['#7f9aad','#e9f3ff','#5aeeff','#cf85ff','#ffae48','#aaff73','#9ceeff','#ff70e1','#fff7ca','#ba88ff'][i]||'#83dffc')+')"></div>'
+ :'<div class="themePreview" style="background:linear-gradient(90deg,'+v.bg.join(',')+')"></div>';
  const exclusive=isSmoke?i>=SMOKE_OPTIONS.length:i>=ATMOSPHERES.length,afford=garageFree||(!exclusive&&account.wallet>=price);
  return `<div class="tierCard ${selected?'equipped':''}"><div class="tierTitle">${i+1}. ${name}</div>${swatch}<div class="tierSub">${desc}</div><div class="price">${price===0||garageFree?'FREE':money(price)+' coins'}</div><div class="tierActions"><button type="button" class="previewMini ${(previewIndex===i)?'active':''}" data-preview="${i}">${previewIndex===i?'PREVIEWING':'PREVIEW'}</button><button type="button" data-buy="${i}" ${selected?'disabled':''} ${(owns||afford)?'':'disabled'}>${selected?'✓ EQUIPPED':owns?'EQUIP':afford?'BUY':exclusive?'ACHIEVEMENT':'NEED '+money(price-account.wallet)}</button></div></div>`;
  }).join('')}</div>`;
