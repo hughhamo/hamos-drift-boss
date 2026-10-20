@@ -1,4 +1,5 @@
 import { getStore } from '@netlify/blobs';
+import { timingSafeEqual } from 'node:crypto';
 
 const cleanName = v => String(v ?? '').trim().replace(/[^a-zA-Z0-9 _-]/g,'').replace(/\s+/g,' ').slice(0,18);
 const cleanFull = v => String(v ?? '').trim().replace(/[^a-zA-ZÀ-ž '\-]/g,'').replace(/\s+/g,' ').slice(0,48);
@@ -6,6 +7,17 @@ const isID = v => typeof v==='string' && /^[0-9a-f-]{36}$/i.test(v);
 const json = (data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const bad = (message,status=400)=>json({error:message},status);
 const storeName='drift-boss-global-leaderboard';
+function validAdminKey(value){
+ const secret=process.env.HAMOS_MODERATOR_KEY||'';
+ if(secret.length<24||typeof value!=='string')return false;
+ const incoming=Buffer.from(value,'utf8'),expected=Buffer.from(secret,'utf8');
+ return incoming.length===expected.length&&timingSafeEqual(incoming,expected);
+}
+function publicDisplay(x){
+ const o=x.moderatorDisplay;
+ return {name:cleanName(o?o.name:x.name),fullName:(o?o.showFullName:x.showFullName)?cleanFull(o?o.fullName:x.fullName):'',moderated:!!o};
+}
+
 
 async function scores(store){
   let cursor,records=[];
@@ -15,7 +27,7 @@ async function scores(store){
     cursor=page.cursor;
   }while(cursor&&records.length<3000);
   return records.filter(x=>x&&typeof x.name==='string'&&Number.isInteger(x.score))
-    .map(x=>({name:cleanName(x.name),score:x.score,id:x.id,fullName:x.showFullName?cleanFull(x.fullName):'',updatedAt:x.updatedAt||''}))
+    .map(x=>({...publicDisplay(x),score:x.score,id:x.id,updatedAt:x.updatedAt||''}))
     .sort((a,b)=>b.score-a.score||a.updatedAt.localeCompare(b.updatedAt));
 }
 export default async function leaderboard(req){
@@ -31,6 +43,35 @@ export default async function leaderboard(req){
     if(raw.length>2048)return bad('Too large',413);
     let data;try{data=JSON.parse(raw)}catch{return bad('Invalid JSON')}
     if(!data||typeof data!=='object')return bad('Invalid data');
+    // Administrative corrections require a private key held ONLY in Netlify's environment.
+    // The discoverable shortcut key '9' is never sufficient authorization.
+    if(['adminList','adminEdit','adminClear'].includes(data.action)){
+      if(!validAdminKey(data.adminKey))return bad('Admin access denied. Check HAMOS_MODERATOR_KEY in Netlify.',403);
+      if(data.action==='adminList'){
+        const rows=(await scores(store)).slice(0,250);
+        return json({players:rows.length,rows});
+      }
+      const targetId=data.targetId;
+      if(!isID(targetId))return bad('Invalid target');
+      const key='scores/'+targetId;
+      const record=await store.get(key,{type:'json'});
+      if(!record)return bad('Player not found',404);
+      if(data.action==='adminClear'){
+        const {moderatorDisplay,...original}=record;
+        await store.setJSON(key,original);
+        await store.setJSON('moderation-log/'+crypto.randomUUID(),{id:targetId,action:'clear',before:record.moderatorDisplay||null,at:new Date().toISOString()});
+        return json({saved:true});
+      }
+      const newName=cleanName(data.newName);
+      const newFull=cleanFull(data.newFullName);
+      const displayFull=data.showFullName===true&&newFull.length>=3;
+      const reason=String(data.reason||'').trim().slice(0,160);
+      if(newName.length<2||reason.length<6)return bad('Enter a nickname and a short reason');
+      const next={...record,moderatorDisplay:{name:newName,fullName:newFull,showFullName:displayFull},moderatedAt:new Date().toISOString()};
+      await store.setJSON(key,next);
+      await store.setJSON('moderation-log/'+crypto.randomUUID(),{id:targetId,action:'edit',before:record.moderatorDisplay||null,after:next.moderatorDisplay,reason,at:next.moderatedAt});
+      return json({saved:true});
+    }
     const id=data.playerId;
     // Keep the old competition record out of the rankings before acknowledging a reset.
     // This separate deletion never modifies any other player's stored record.
