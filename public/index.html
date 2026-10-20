@@ -84,6 +84,8 @@ h1{margin:0;font-size:clamp(46px,7vw,70px);line-height:.92;letter-spacing:-.065e
 h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;padding:0 0 12px;letter-spacing:.27em;color:#ffe4b0;font-style:normal;font-weight:1000}
 @media(max-width:620px){h1 .hamos-top{font-size:19px;padding:0 0 8px}}
 #resetWarning{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:#040912df;backdrop-filter:blur(11px);padding:20px}#resetWarning.active{display:flex}#resetWarning .resetPanel{max-width:440px;width:100%;background:linear-gradient(145deg,#1f253b,#0b1120);border:1px solid #ff778d88;border-radius:22px;padding:28px;box-shadow:0 20px 75px #000c;text-align:center}#resetWarning h2{font-size:22px;color:#ff879a;margin:6px 0 12px}#resetWarning p{font-size:14px;line-height:1.6;color:#d9e2ef}#resetWarning .resetActions{display:flex;gap:10px;margin-top:22px}#resetWarning button{flex:1;padding:13px 8px;border:1px solid #9bbad544;border-radius:11px;background:#24364b;color:#edf7ff;font-weight:900;cursor:pointer}#resetWarning #confirmReset{background:#ed4960;color:white;border-color:#ff9aaa}#resetWarning button:disabled{opacity:.55;cursor:default}
+
+#perkToast{position:absolute;top:calc(env(safe-area-inset-top,0px) + 80px);left:50%;transform:translate(-50%,-10px) scale(.95);z-index:22;max-width:min(90vw,610px);padding:14px 22px;border-radius:15px;background:linear-gradient(135deg,#101933ed,#123c3fe9);border:1px solid #6cffca88;box-shadow:0 12px 38px #0009,0 0 26px #30f1bd36;color:#bffff0;font-size:13px;font-weight:950;letter-spacing:.09em;text-align:center;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;backdrop-filter:blur(12px)}#perkToast.visible{opacity:1;transform:translate(-50%,0) scale(1)}
 </style>
 </head>
 <body>
@@ -101,6 +103,7 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 <div class="menuTools"><button id="openShopMenu" type="button">🛠<span>GARAGE</span></button><button id="openAchievementsMenu" type="button">✦<span>ACHIEVEMENTS</span></button><button id="openBoardMenu" type="button">🏆<span>LEADERBOARD</span></button><button id="openProfileMenu" type="button">👤 MY NAME</button></div><div id="menuCarHint">CLICK THE CAR TO CHOOSE YOUR RACING NICKNAME</div>
 <div id="modalWrap" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><section id="modalWindow"><div class="modalHead"><strong id="modalTitle">GARAGE</strong><button id="modalClose" type="button" aria-label="Close">×</button></div><div id="modalContent"></div></section></div>
 <div id="resetWarning" role="dialog" aria-modal="true" aria-labelledby="resetTitle"><div class="resetPanel"><div style="font-size:28px">⚠</div><h2 id="resetTitle">RESET YOUR ACCOUNT?</h2><p id="resetDetails">This permanently removes your leaderboard score, nickname, wallet, garage purchases, achievements and personal best from this browser. Other players' records will not change.</p><p><strong>Press R again to confirm</strong>, or cancel to keep everything.</p><div class="resetActions"><button id="cancelReset" type="button">CANCEL</button><button id="confirmReset" type="button">RESET ACCOUNT</button></div><p id="resetStatus" aria-live="polite"></p></div></div>
+<div id="perkToast" role="status" aria-live="polite"></div>
 <div id="bottom">RELEASE <b>↖ LEFT</b> &nbsp;·&nbsp; HOLD SPACE <b>RIGHT ↗</b></div>
 </div>
 <script>
@@ -144,7 +147,7 @@ const ATMOSPHERES=[
  {name:'Ultraviolet Rift',price:160000,desc:'Electric magenta lightning in an impossible violet sky',bg:['#08001f','#390073','#ba16ca','#19004d'],glow:['#fc2dff','#6d28ff'],deck:['#241050','#3f1971','#20134a'],neon:['#ff51f7','#9562ff']},
  {name:'Abyssal Ocean',price:320000,desc:'Inky blue ocean, luminous bioluminescent trails',bg:['#000817','#002344','#008caa','#000c26'],glow:['#11ffee','#1573ff'],deck:['#051a36','#075274','#052241'],neon:['#10ffed','#308aff']}
 ];
-let account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],smokeEquipped:0,atmosEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0}};
+let account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],smokeEquipped:0,atmosEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false};
 try{const a=JSON.parse(localStorage.getItem(DB_SAVE_KEY)||'{}');account={...account,...a};}catch(e){}
 account.wallet=Number.isFinite(+account.wallet)?Math.max(0,Math.floor(+account.wallet)):0;if(account.atmosEquipped===8||account.atmosEquipped===9)account.atmosEquipped=0;if(Array.isArray(account.atmosOwned))account.atmosOwned=account.atmosOwned.filter(i=>i!==8&&i!==9);
 for(const kind of ['smoke','atmos']){
@@ -723,7 +726,7 @@ async function confirmAccountReset(){
   try{localStorage.removeItem(DB_SAVE_KEY);localStorage.removeItem('drift-boss-premium-best');localStorage.removeItem(COMPETITION_ID_KEY)}catch(e){}
   competitionId=createCompetitionId();
   try{localStorage.setItem(COMPETITION_ID_KEY,competitionId)}catch(e){}
-  account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],smokeEquipped:0,atmosEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0}};
+  account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],smokeEquipped:0,atmosEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false};
   best=0;score=0;time=0;coinCount=0;garageFree=false;
   bestEl.textContent='000000';scoreEl.textContent='000000';
   previewSmokeIndex=null;previewAtmosIndex=null;
@@ -735,7 +738,22 @@ async function confirmAccountReset(){
 }
 $('cancelReset').addEventListener('click',cancelAccountReset);
 $('confirmReset').addEventListener('click',confirmAccountReset);
-function keydown(e){if(e.code==='KeyR'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();if(e.repeat)return;if(resetPending){confirmAccountReset()}else showResetWarning();return}if(resetPending||resetBusy)return;if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Digit9'||e.code==='Numpad9'){e.preventDefault();if(e.repeat)return;garageFree=!garageFree;if(modalWrap.classList.contains('open'))renderModal();if(garageFree&&state==='menu')openAdminPanel();return}if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();if(e.repeat)return;if(state==='menu'||state==='dead'||state==='finished'){restart();return}else if(state==='paused')resume();held=true}else if(e.code==='Escape'){if(state==='playing')displayOverlay('paused');else if(state==='paused')resume()}}
+function unlockEverythingWithP(){
+ if(resetPending||resetBusy)return;
+ const first=!account.pSecretRedeemed;
+ account.achievementClaims=ACH.map((_,i)=>i);
+ account.smokeOwned=ALL_SMOKES.map((_,i)=>i);
+ account.atmosOwned=ALL_THEMES.map((_,i)=>i);
+ if(first){account.wallet+=4000000;account.pSecretRedeemed=true}
+ saveAccount();updateCoinHud();
+ if(modalWrap.classList.contains('open')&&(modalPage==='achievements'||modalPage==='shop'))renderModal();
+ const toast=$('perkToast');
+ toast.textContent=first?'✦ P UNLOCKED · ALL 16 ACHIEVEMENTS · +4,000,000 COINS':'✦ ALL ACHIEVEMENTS ALREADY UNLOCKED';
+ toast.classList.remove('visible');void toast.offsetWidth;toast.classList.add('visible');
+ if(toast.hideId)clearTimeout(toast.hideId);
+ toast.hideId=setTimeout(()=>toast.classList.remove('visible'),3900);
+}
+function keydown(e){if(e.code==='KeyR'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();if(e.repeat)return;if(resetPending){confirmAccountReset()}else showResetWarning();return}if(resetPending||resetBusy)return;if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='KeyP'){e.preventDefault();if(!e.repeat)unlockEverythingWithP();return}if(e.code==='Digit9'||e.code==='Numpad9'){e.preventDefault();if(e.repeat)return;garageFree=!garageFree;if(modalWrap.classList.contains('open'))renderModal();if(garageFree&&state==='menu')openAdminPanel();return}if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();if(e.repeat)return;if(state==='menu'||state==='dead'||state==='finished'){restart();return}else if(state==='paused')resume();held=true}else if(e.code==='Escape'){if(state==='playing')displayOverlay('paused');else if(state==='paused')resume()}}
 function keyup(e){if(resetPending||resetBusy||modalWrap.classList.contains('open'))return;if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();held=false}}
 addEventListener('keydown',keydown);addEventListener('keyup',keyup);addEventListener('blur',()=>{held=false;touchHeld=false;if(state==='playing')displayOverlay('paused')});
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();if(state==='menu'){if(isCarHit(e.clientX,e.clientY)){openModal('profile');return}restart();return}else if(state==='dead'||state==='finished')restart();else if(state==='paused')resume();touchHeld=true});addEventListener('pointerup',()=>touchHeld=false);addEventListener('pointercancel',()=>touchHeld=false);
