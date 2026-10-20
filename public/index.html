@@ -508,7 +508,7 @@ function syncScore(dt,fromX,fromZ,pace){
 
 function showMainMenu(){
  state='menu';carTier=0;prepareRoad();player={x:.8,z:10.8,y:0,vx:0,vz:0,vy:0,heading:.58,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};
- camInitialized=false;held=false;touchHeld=false;accumulator=0;smoke.length=0;tracks.length=0;
+ camInitialized=false;held=false;touchHeld=false;accumulator=0;smoke.length=0;tracks.length=0;fxPath.length=0;
  shell.classList.add('menu');overlay.classList.remove('hidden');overlay.classList.add('intro');
  kicker.textContent='STARTING CAR · STREET HATCH';headline.innerHTML='<span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em>';message.textContent='PRESS SPACE TO PLAY';
  play.style.display='none';backToModes.style.display='none';updateCoinHud();
@@ -723,7 +723,7 @@ function prepareRoad(){seed=765239;fxSeed=318791;tiles=[];runs=[];ramps=[];banan
 function restart(){
  if(resetPending||resetBusy)return;
  carTier=0;prepareRoad();player={x:0,z:7,y:0,vx:0,vz:40,vy:0,heading:0,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};
- state='playing';held=false;touchHeld=false;driftLeft=0;score=0;time=0;deadSeconds=0;dropShown=false;camInitialized=false;tracks=[];smoke=[];coinBursts=[];coinCount=0;carTier=0;routeKind='normal';loopBonusTime=0;activeLoop=null;greenDriftTime=0;greenBranchId=null;greenRewardFlash=0;greenDriftAwarded.clear();greenDriftGrace=0;bananaSpinTime=0;bananaSpinAngle=0;bananaSpinCount=0;upgradeFlash=0;upgradeToast.classList.remove('visible');updateCoinHud();skidClock=0;streak=0;screenShake=0;accumulator=0;
+ state='playing';fxPath.length=0;held=false;touchHeld=false;driftLeft=0;score=0;time=0;deadSeconds=0;dropShown=false;camInitialized=false;tracks=[];smoke=[];coinBursts=[];coinCount=0;carTier=0;routeKind='normal';loopBonusTime=0;activeLoop=null;greenDriftTime=0;greenBranchId=null;greenRewardFlash=0;greenDriftAwarded.clear();greenDriftGrace=0;bananaSpinTime=0;bananaSpinAngle=0;bananaSpinCount=0;upgradeFlash=0;upgradeToast.classList.remove('visible');updateCoinHud();skidClock=0;streak=0;screenShake=0;accumulator=0;
  scoreEl.textContent='000000';speedEl.textContent='150';level.textContent='';overlay.classList.add('hidden');overlay.classList.remove('intro');shell.classList.remove('menu');backToModes.style.display='none';updateSpeedHud();play.blur();beginCompetitionRun();sound(510,.08,.032);
 }
 function endGame(){
@@ -1094,7 +1094,7 @@ function update(dt){
        if(onRoad(x,z))tracks.push({x,z,dx:-player.vx*.11,dz:-player.vz*.11,life:1.25,alpha:intensity,tier:account.smokeEquipped,hue:Math.round(fxRnd()*360)});
      }
      {const s=activeSmoke(),tier=account.smokeEquipped,count=Math.min(10,s[5]);
-      for(let n=0;n<Math.min(count,tier>=4?1:2);n++)if(fxRnd()<.75){
+      for(let n=0;n<Math.min(count,tier>=4?3:2);n++)if(fxRnd()<fxQuality*.87){
        const duration=Math.min(.65,s[6])*(.73+fxRnd()*.36);
        smoke.push({x:player.x-1.7*si+fxRandom(-1.9,1.9)*c,z:player.z-1.7*c+fxRandom(-1.9,1.9)*si,y:.28+fxRnd()*.2,life:duration,maxLife:duration,r:fxRandom(.2,.56)*s[7],hue:Math.floor(fxRnd()*360),tier,phase:fxRnd()*TAU});
       }
@@ -1104,7 +1104,7 @@ function update(dt){
  for(let i=tracks.length-1;i>=0;i--){tracks[i].life-=dt;if(tracks[i].life<=0)tracks.splice(i,1)}
  const trackCap=72;if(tracks.length>trackCap)tracks.splice(0,tracks.length-trackCap);
  for(let i=smoke.length-1;i>=0;i--){let p=smoke[i];p.life-=dt;p.y+=dt*(.6+account.smokeEquipped*.10);if(p.life<=0)smoke.splice(i,1)}
- const smokeCap=38;if(smoke.length>smokeCap)smoke.splice(0,smoke.length-smokeCap);
+ const smokeCap=50;sampleFxTrail();if(smoke.length>smokeCap)smoke.splice(0,smoke.length-smokeCap);
  syncScore(dt,raceFromX,raceFromZ,speed);
  // Progress now tracks green-road time only, independent of the car's drift.
  updateGreenStay(dt);
@@ -1374,6 +1374,29 @@ segment(local(-1.04,1.07,-2.36),local(-.57,1.07,-2.36),'#ff667e',3.1);segment(lo
 }
 
 
+const fxPath=[];let fxQuality=1,fxAvg=.017;
+function updateFxQuality(dt){fxAvg=fxAvg*.94+Math.min(.06,dt)*.06;const desired=fxAvg>.032?.57:fxAvg>.026?.76:1;fxQuality+=(desired-fxQuality)*.06}
+function sampleFxTrail(){
+ if(state==='playing'&&!player.airborne&&!player.fallingOff&&driftLeft>.12){
+  const prev=fxPath[fxPath.length-1],k=account.smokeEquipped;
+  if(!prev||prev.tier!==k||Math.hypot(player.x-prev.x,player.z-prev.z)>1.5)fxPath.push({x:player.x,z:player.z,heading:player.heading,at:time,tier:k})
+ }
+ while(fxPath.length&&(time-fxPath[0].at>2.9||fxPath.length>105))fxPath.shift();
+}
+function drawFxRibbon(){
+ const k=account.smokeEquipped;if(state!=='playing'||k===14||fxPath.length<2)return;
+ const points=fxPath.filter(p=>p.tier===k&&time-p.at<(k===16?2.9:1.8));if(points.length<2)return;
+ const rails=[[],[]];
+ for(const p of points){const sideX=Math.cos(p.heading),sideZ=-Math.sin(p.heading),sep=k===16?.78:.57,height=k===16?.3+.48*Math.sin((time-p.at)*2.2):.19;
+  for(let side=0;side<2;side++){const n=side?1:-1;rails[side].push(project(vec(p.x+n*sideX*sep,height,p.z+n*sideZ*sep)))}}
+ ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+ const cols=k===16?['#c1e4ef','#ffcc70']:k===9?['#b16aff','#ff76d6']:k===4?['#ff7937','#ffe38d']:k===7?['#f96aff','#76fff1']:k===6?['#70efff','#e0ffff']:k===8?['#fff8cc','#b6ecff']:k===15?['#06040b','#8f77cd']:['#64eaff','#f5b5ff'];
+ function stroke(points,color,width,alpha){ctx.beginPath();let was=false;for(const p of points){if(!p){was=false;continue}if(was)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);was=true}ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke()}
+ for(const rail of rails)stroke(rail,k===16?'#192b3b':cols[0],k===16?8:k>=4?15:10,.25);
+ stroke(rails[0],cols[0],k===16?4:4.7,.91);stroke(rails[1],cols[1],k===16?4:4.5,.91);
+ if(k===16){ctx.beginPath();for(let i=0;i<points.length;i+=3){const a=rails[0][i],b=rails[1][i];if(a&&b){ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y)}}ctx.globalAlpha=.88;ctx.strokeStyle='#ffeab7';ctx.lineWidth=2;ctx.stroke()}
+ ctx.restore();
+}
 function drawAttachedFX(){
  const k=account.smokeEquipped;if(state!=='playing'||player.fallingOff||driftLeft<.12)return;
  if(k===14){const a=project(local(.7,1.1,-2)),b=project(local(.7,3,-4)),f=project(local(.7,.5,-5));if(a&&b&&f){ctx.save();ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#b88d63';ctx.lineWidth=4;ctx.stroke();ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(f.x,f.y);ctx.strokeStyle='#96eeff';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#68def5';ctx.beginPath();ctx.ellipse(f.x,f.y,12,6,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(f.x-10,f.y);ctx.lineTo(f.x-19,f.y-7);ctx.lineTo(f.x-19,f.y+7);ctx.fill();ctx.restore()}}
@@ -1469,7 +1492,7 @@ function drawPedestal(){
  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(p.x,p.y+12,w,h,0,0,TAU);ctx.fill();
  ctx.strokeStyle='rgba(188,240,255,.33)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,p.y+12,w,h,0,0,TAU);ctx.stroke();
 }
-function render(dt){updateCamera(dt);ctx.drawImage(background,0,0,W,H);const underRoad=(player.y<-.055&&(player.fallingOff||state==='falling')&&!activeLoop);if(underRoad)drawCar();drawRoad();if(state==='menu')drawShowroomCar();drawLoops();drawBananas();drawCoins();drawSkids();if(!underRoad&&state!=='menu')drawCar();drawAttachedFX();if(state==='menu'){const g=ctx.createLinearGradient(0,H*.18,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.26)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}else if(state==='playing'){if(activeLoop){ctx.fillStyle='rgba(255,153,34,.055)';ctx.fillRect(0,0,W,H)}else if(player.boost>.02){let a=clamp(player.boost*.18,0,.09);ctx.fillStyle='rgba(255,70,178,'+a+')';ctx.fillRect(0,0,W,H)}else if(driftLeft>.25){let a=clamp((driftLeft-.25)/.41,0,1)*.042;ctx.fillStyle='rgba(248,164,77,'+a+')';ctx.fillRect(0,0,W,H)}}}
+function render(dt){updateCamera(dt);ctx.drawImage(background,0,0,W,H);const underRoad=(player.y<-.055&&(player.fallingOff||state==='falling')&&!activeLoop);if(underRoad)drawCar();drawRoad();if(state==='menu')drawShowroomCar();drawLoops();drawBananas();drawCoins();drawSkids();drawFxRibbon();if(!underRoad&&state!=='menu')drawCar();drawAttachedFX();if(state==='menu'){const g=ctx.createLinearGradient(0,H*.18,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.26)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}else if(state==='playing'){if(activeLoop){ctx.fillStyle='rgba(255,153,34,.055)';ctx.fillRect(0,0,W,H)}else if(player.boost>.02){let a=clamp(player.boost*.18,0,.09);ctx.fillStyle='rgba(255,70,178,'+a+')';ctx.fillRect(0,0,W,H)}else if(driftLeft>.25){let a=clamp((driftLeft-.25)/.41,0,1)*.042;ctx.fillStyle='rgba(248,164,77,'+a+')';ctx.fillRect(0,0,W,H)}}}
 const FIX=1/120;
 let lastPreviewAt=0;
 function drawGaragePreview(ts){
@@ -1508,7 +1531,7 @@ function drawGaragePreview(ts){
  }
  c.save();c.translate(w*.73,h*.36);c.rotate(-.24);c.shadowColor='#34f9ff';c.shadowBlur=14;c.fillStyle='#19bad1';c.fillRect(-41,-21,92,48);c.fillStyle='#bff9ff';c.fillRect(-20,-18,47,37);c.fillStyle='#0b1d39';c.fillRect(16,-11,15,22);c.fillStyle='#061521';c.fillRect(-38,-25,22,6);c.fillRect(22,-25,22,6);c.fillRect(-38,27,22,6);c.fillRect(22,27,22,6);c.restore();
 }
-function frame(ts){if(!last)last=ts;let dt=Math.min(.05,(ts-last)/1000);last=ts;
+function frame(ts){if(!last)last=ts;let dt=Math.min(.05,(ts-last)/1000);last=ts;updateFxQuality(dt);
 if(state==='menu'){menuYaw=(menuYaw+dt*.58)%TAU;player.tilt=0;player.edgeRoll=0;player.edgePitch=0;player.loopPitch=0;player.y=0}accumulator=Math.min(.07,accumulator+dt);let n=0;while(accumulator>=FIX&&n<7){update(FIX);accumulator-=FIX;n++}render(dt);drawGaragePreview(ts);requestAnimationFrame(frame)}
 resize();initOnlineLeaderboard();prepareRoad();player={x:.8,z:10.8,y:0,vx:0,vz:0,vy:0,heading:.58,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};state='menu';shell.classList.add('menu');overlay.classList.add('intro');play.style.display='none';updateCoinHud();updateSpeedHud();requestAnimationFrame(frame);
 window.DriftBossDebug={
