@@ -83,6 +83,7 @@ h1{margin:0;font-size:clamp(46px,7vw,70px);line-height:.92;letter-spacing:-.065e
 @media(max-width:620px){#onlineIntro{font-size:9px;margin:5px 0 6px}#onlineIntro small{font-size:8px}}
 h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;padding:0 0 12px;letter-spacing:.27em;color:#ffe4b0;font-style:normal;font-weight:1000}
 @media(max-width:620px){h1 .hamos-top{font-size:19px;padding:0 0 8px}}
+#resetWarning{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:#040912df;backdrop-filter:blur(11px);padding:20px}#resetWarning.active{display:flex}#resetWarning .resetPanel{max-width:440px;width:100%;background:linear-gradient(145deg,#1f253b,#0b1120);border:1px solid #ff778d88;border-radius:22px;padding:28px;box-shadow:0 20px 75px #000c;text-align:center}#resetWarning h2{font-size:22px;color:#ff879a;margin:6px 0 12px}#resetWarning p{font-size:14px;line-height:1.6;color:#d9e2ef}#resetWarning .resetActions{display:flex;gap:10px;margin-top:22px}#resetWarning button{flex:1;padding:13px 8px;border:1px solid #9bbad544;border-radius:11px;background:#24364b;color:#edf7ff;font-weight:900;cursor:pointer}#resetWarning #confirmReset{background:#ed4960;color:white;border-color:#ff9aaa}#resetWarning button:disabled{opacity:.55;cursor:default}
 </style>
 </head>
 <body>
@@ -99,6 +100,7 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 <div id="garageLaunch"></div>
 <div class="menuTools"><button id="openShopMenu" type="button">🛠<span>GARAGE</span></button><button id="openAchievementsMenu" type="button">✦<span>ACHIEVEMENTS</span></button><button id="openBoardMenu" type="button">🏆<span>LEADERBOARD</span></button><button id="openProfileMenu" type="button">👤 MY NAME</button></div><div id="menuCarHint">CLICK THE CAR TO CHOOSE YOUR RACING NICKNAME</div>
 <div id="modalWrap" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><section id="modalWindow"><div class="modalHead"><strong id="modalTitle">GARAGE</strong><button id="modalClose" type="button" aria-label="Close">×</button></div><div id="modalContent"></div></section></div>
+<div id="resetWarning" role="dialog" aria-modal="true" aria-labelledby="resetTitle"><div class="resetPanel"><div style="font-size:28px">⚠</div><h2 id="resetTitle">RESET YOUR ACCOUNT?</h2><p id="resetDetails">This permanently removes your leaderboard score, nickname, wallet, garage purchases, achievements and personal best from this browser. Other players' records will not change.</p><p><strong>Press R again to confirm</strong>, or cancel to keep everything.</p><div class="resetActions"><button id="cancelReset" type="button">CANCEL</button><button id="confirmReset" type="button">RESET ACCOUNT</button></div><p id="resetStatus" aria-live="polite"></p></div></div>
 <div id="bottom">RELEASE <b>↖ LEFT</b> &nbsp;·&nbsp; HOLD SPACE <b>RIGHT ↗</b></div>
 </div>
 <script>
@@ -490,7 +492,7 @@ let competitionId='';
 try {competitionId=localStorage.getItem(COMPETITION_ID_KEY)||''}catch(e){}
 function createCompetitionId(){const a=new Uint8Array(16);if(globalThis.crypto?.getRandomValues)crypto.getRandomValues(a);else for(let i=0;i<16;i++)a[i]=Math.floor(Math.random()*256);a[6]=(a[6]&15)|64;a[8]=(a[8]&63)|128;const h=Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;}
 if(!/^[a-f0-9-]{36}$/i.test(competitionId)){competitionId=createCompetitionId();try{localStorage.setItem(COMPETITION_ID_KEY,competitionId)}catch(e){}}
-let onlineRunPromise=null,onlineRunFinished=false;
+let onlineRunPromise=null,onlineRunFinished=false,resetPending=false,resetBusy=false,resetGeneration=0;
 const onlineNoticeEl=$('onlineLinkStatus');
 async function competitionRequest(payload){
  const opts=payload?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}:{method:'GET'};
@@ -499,16 +501,19 @@ async function competitionRequest(payload){
  return response.json();
 }
 function beginCompetitionRun(){
+ if(resetPending||resetBusy)return;
  onlineRunFinished=false;
  onlineRunPromise=onlineApi&&account.nickname?onlineApi.start(account.nickname).catch(e=>{console.warn('Online run start failed',e);return null}):null;
 }
 async function finishCompetitionRun(finalScore,seconds){
- if(onlineRunFinished||!onlineRunPromise||!account.nickname)return;
+ if(resetPending||resetBusy||onlineRunFinished||!onlineRunPromise||!account.nickname)return;
+ const submissionGeneration=resetGeneration;
  onlineRunFinished=true;
  try{
   const session=await onlineRunPromise;
   if(!session?.runId)return;
   const result=await onlineApi.finish(session.runId,finalScore,seconds,account.nickname);
+  if(submissionGeneration!==resetGeneration)return;
   boardStatus='LIVE WORLDWIDE · Latest game result saved';
   if(result.isPersonalBest&&state==='dead')message.innerHTML+='<p style="color:#9effc5;font-weight:900;font-size:12px">WORLDWIDE PERSONAL BEST · RANK #'+result.rank+'</p>';
   if(modalPage==='board'&&modalWrap.classList.contains('open'))loadBoard();
@@ -626,7 +631,8 @@ async function initOnlineLeaderboard(){
   load:()=>competitionRequest(),
   start:name=>competitionRequest({action:'start',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName}),
   finish:(runId,score,seconds,name)=>competitionRequest({action:'finish',playerId:competitionId,runId,score,seconds,name,fullName:account.fullName,showFullName:account.showFullName}),
-  rename:name=>competitionRequest({action:'rename',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName})
+  rename:name=>competitionRequest({action:'rename',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName}),
+  deleteAccount:()=>competitionRequest({action:'delete',playerId:competitionId})
  };
  try{const data=await onlineApi.load();globalBoard=data.top||[];boardStatus='LIVE WORLDWIDE · '+(data.players||0)+' RACERS';onlineNoticeEl.textContent='LIVE WORLDWIDE LEADERBOARD';}
  catch(e){boardStatus='OFFLINE PREVIEW · Publish the Netlify Functions to activate global scores.';onlineNoticeEl.textContent='ONLINE LEADERBOARD NOT CONNECTED';console.warn('Leaderboard not yet connected:',e)}
@@ -634,6 +640,7 @@ async function initOnlineLeaderboard(){
 
 function prepareRoad(){seed=765239;fxSeed=318791;tiles=[];runs=[];ramps=[];bananas=[];coins=[];branches=[];loops=[];activeLoop=null;orangeSeeded=false;lastBranchTurn=-100;lastRampTurn=-20;redSeeded=false;gen={x:0,z:0,dir:'z',turn:0,s:0};progress=0;generateRun();extendRoad(roadAhead)}
 function restart(){
+ if(resetPending||resetBusy)return;
  carTier=0;prepareRoad();player={x:0,z:7,y:0,vx:0,vz:40,vy:0,heading:0,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};
  state='playing';held=false;touchHeld=false;driftLeft=0;score=0;time=0;deadSeconds=0;dropShown=false;camInitialized=false;tracks=[];smoke=[];coinBursts=[];coinCount=0;carTier=0;routeKind='normal';loopBonusTime=0;activeLoop=null;greenDriftTime=0;greenBranchId=null;greenRewardFlash=0;greenDriftAwarded.clear();greenDriftGrace=0;bananaSpinTime=0;bananaSpinAngle=0;bananaSpinCount=0;upgradeFlash=0;upgradeToast.classList.remove('visible');updateCoinHud();skidClock=0;streak=0;screenShake=0;accumulator=0;
  scoreEl.textContent='000000';speedEl.textContent='150';level.textContent='';overlay.classList.add('hidden');overlay.classList.remove('intro');shell.classList.remove('menu');backToModes.style.display='none';updateSpeedHud();play.blur();beginCompetitionRun();sound(510,.08,.032);
@@ -661,8 +668,46 @@ function displayOverlay(kind){
 }
 function resume(){state='playing';overlay.classList.add('hidden');shell.classList.remove('menu');last=0;accumulator=0}
 play.addEventListener('click',()=>state==='paused'?resume():restart());
-function keydown(e){if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Digit9'||e.code==='Numpad9'){e.preventDefault();if(e.repeat)return;garageFree=!garageFree;if(modalPage==='shop'&&modalWrap.classList.contains('open'))renderShop();return}if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();if(e.repeat)return;if(state==='menu'||state==='dead'||state==='finished'){restart();return}else if(state==='paused')resume();held=true}else if(e.code==='Escape'){if(state==='playing')displayOverlay('paused');else if(state==='paused')resume()}}
-function keyup(e){if(modalWrap.classList.contains('open'))return;if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();held=false}}
+function showResetWarning(){
+ if(resetPending||resetBusy)return;
+ resetPending=true;held=false;touchHeld=false;
+ if(state==='playing')displayOverlay('paused');
+ $('resetStatus').textContent='';
+ $('resetWarning').classList.add('active');
+}
+function cancelAccountReset(){
+ if(resetBusy)return;
+ resetPending=false;$('resetWarning').classList.remove('active');
+}
+async function confirmAccountReset(){
+ if(!resetPending||resetBusy)return;
+ resetBusy=true;
+ const ok=$('confirmReset'),cancel=$('cancelReset');
+ ok.disabled=true;cancel.disabled=true;$('resetStatus').textContent='Removing your leaderboard entry…';
+ // Don't clear saved progress unless the online leaderboard confirms deletion.
+ try{
+  if(!onlineApi)throw Error('Leaderboard is offline. Try again when connected.');
+  const result=await onlineApi.deleteAccount();
+  if(!result?.deleted)throw Error('Could not remove your leaderboard score.');
+  resetGeneration++;
+  onlineRunFinished=true;onlineRunPromise=null;
+  try{localStorage.removeItem(DB_SAVE_KEY);localStorage.removeItem('drift-boss-premium-best');localStorage.removeItem(COMPETITION_ID_KEY)}catch(e){}
+  competitionId=createCompetitionId();
+  try{localStorage.setItem(COMPETITION_ID_KEY,competitionId)}catch(e){}
+  account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],smokeEquipped:0,atmosEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0}};
+  best=0;score=0;time=0;coinCount=0;garageFree=false;
+  bestEl.textContent='000000';scoreEl.textContent='000000';
+  previewSmokeIndex=null;previewAtmosIndex=null;
+  saveAccount();resetPending=false;$('resetWarning').classList.remove('active');
+  modalWrap.classList.remove('open');modalWasPlaying=false;
+  resize();showMainMenu();await loadBoard();
+ }catch(e){$('resetStatus').textContent=(e?.message||'Reset failed')+' Your progress is safe.';}
+ finally{resetBusy=false;ok.disabled=false;cancel.disabled=false}
+}
+$('cancelReset').addEventListener('click',cancelAccountReset);
+$('confirmReset').addEventListener('click',confirmAccountReset);
+function keydown(e){if(e.code==='KeyR'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();if(e.repeat)return;if(resetPending){confirmAccountReset()}else showResetWarning();return}if(resetPending||resetBusy)return;if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Digit9'||e.code==='Numpad9'){e.preventDefault();if(e.repeat)return;garageFree=!garageFree;if(modalPage==='shop'&&modalWrap.classList.contains('open'))renderShop();return}if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();if(e.repeat)return;if(state==='menu'||state==='dead'||state==='finished'){restart();return}else if(state==='paused')resume();held=true}else if(e.code==='Escape'){if(state==='playing')displayOverlay('paused');else if(state==='paused')resume()}}
+function keyup(e){if(resetPending||resetBusy||modalWrap.classList.contains('open'))return;if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();held=false}}
 addEventListener('keydown',keydown);addEventListener('keyup',keyup);addEventListener('blur',()=>{held=false;touchHeld=false;if(state==='playing')displayOverlay('paused')});
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();if(state==='menu'){if(isCarHit(e.clientX,e.clientY)){openModal('profile');return}restart();return}else if(state==='dead'||state==='finished')restart();else if(state==='paused')resume();touchHeld=true});addEventListener('pointerup',()=>touchHeld=false);addEventListener('pointercancel',()=>touchHeld=false);
 soundBtn.addEventListener('click',()=>{soundEnabled=!soundEnabled;soundBtn.textContent=soundEnabled?'🔊':'🔇';if(soundEnabled)sound(630,.06,.022);});
