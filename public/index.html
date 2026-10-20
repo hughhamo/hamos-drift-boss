@@ -1397,6 +1397,25 @@ function drawFxRibbon(){
  if(k===16){ctx.beginPath();for(let i=0;i<points.length;i+=3){const a=rails[0][i],b=rails[1][i];if(a&&b){ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y)}}ctx.globalAlpha=.88;ctx.strokeStyle='#ffeab7';ctx.lineWidth=2;ctx.stroke()}
  ctx.restore();
 }
+const spriteCache={};
+function getBonusSprite(k){
+ if(spriteCache[k])return spriteCache[k];
+ const img=document.createElement('canvas');img.width=64;img.height=64;const g=img.getContext('2d');
+ if(k===17){g.strokeStyle='#ffe555';g.lineWidth=10;g.lineCap='round';g.beginPath();g.moveTo(13,10);g.bezierCurveTo(18,54,45,52,50,14);g.stroke();}
+ if(k===18){g.fillStyle='#77f2ff';g.fillRect(16,17,32,35);g.fillStyle='#fda4d9';g.fillRect(18,36,28,14);g.fillStyle='#f2ffff';g.fillRect(14,13,36,6);g.strokeStyle='#ffe4a4';g.beginPath();g.moveTo(37,15);g.lineTo(48,3);g.stroke();}
+ if(k===19){g.fillStyle='#70ffab';g.fillRect(9,18,46,29);g.strokeStyle='#eeffc8';g.strokeRect(9,18,46,29);g.fillStyle='#126b4a';g.fillRect(19,21,25,24);g.fillStyle='#f3ffba';g.font='bold 24px sans-serif';g.textAlign='center';g.fillText(String.fromCharCode(36),32,42);}
+ return spriteCache[k]=img;
+}
+function drawBonusTrail(){
+ const k=account.smokeEquipped;if(k<17||k>19||state!=='playing')return;
+ const img=getBonusSprite(k);ctx.save();let count=0;
+ for(let i=fxPath.length-1;i>=0;i-=3){const q=fxPath[i];if(q.tier!==k||time-q.at>1.7)continue;
+  const p=project(vec(q.x,.42,q.z));if(!p||p.depth>130||p.x< -25||p.x>W+25)continue;
+  const life=1-(time-q.at)/1.7,sz=Math.max(8,23*life);
+  ctx.globalAlpha=life;ctx.drawImage(img,p.x-sz/2,p.y-sz/2,sz,sz);if(++count>=25)break;
+ }
+ ctx.restore();
+}
 function drawAttachedFX(){
  const k=account.smokeEquipped;if(state!=='playing'||player.fallingOff||driftLeft<.12)return;
  if(k===14){const a=project(local(.7,1.1,-2)),b=project(local(.7,3,-4)),f=project(local(.7,.5,-5));if(a&&b&&f){ctx.save();ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle='#b88d63';ctx.lineWidth=4;ctx.stroke();ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(f.x,f.y);ctx.strokeStyle='#96eeff';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#68def5';ctx.beginPath();ctx.ellipse(f.x,f.y,12,6,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(f.x-10,f.y);ctx.lineTo(f.x-19,f.y-7);ctx.lineTo(f.x-19,f.y+7);ctx.fill();ctx.restore()}}
@@ -1492,7 +1511,7 @@ function drawPedestal(){
  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(p.x,p.y+12,w,h,0,0,TAU);ctx.fill();
  ctx.strokeStyle='rgba(188,240,255,.33)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,p.y+12,w,h,0,0,TAU);ctx.stroke();
 }
-function render(dt){updateCamera(dt);ctx.drawImage(background,0,0,W,H);const underRoad=(player.y<-.055&&(player.fallingOff||state==='falling')&&!activeLoop);if(underRoad)drawCar();drawRoad();if(state==='menu')drawShowroomCar();drawLoops();drawBananas();drawCoins();drawSkids();drawFxRibbon();if(!underRoad&&state!=='menu')drawCar();drawAttachedFX();if(state==='menu'){const g=ctx.createLinearGradient(0,H*.18,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.26)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}else if(state==='playing'){if(activeLoop){ctx.fillStyle='rgba(255,153,34,.055)';ctx.fillRect(0,0,W,H)}else if(player.boost>.02){let a=clamp(player.boost*.18,0,.09);ctx.fillStyle='rgba(255,70,178,'+a+')';ctx.fillRect(0,0,W,H)}else if(driftLeft>.25){let a=clamp((driftLeft-.25)/.41,0,1)*.042;ctx.fillStyle='rgba(248,164,77,'+a+')';ctx.fillRect(0,0,W,H)}}}
+function render(dt){updateCamera(dt);ctx.drawImage(background,0,0,W,H);const underRoad=(player.y<-.055&&(player.fallingOff||state==='falling')&&!activeLoop);if(underRoad)drawCar();drawRoad();if(state==='menu')drawShowroomCar();drawLoops();drawBananas();drawCoins();drawSkids();drawFxRibbon();drawBonusTrail();if(!underRoad&&state!=='menu')drawCar();drawAttachedFX();if(state==='menu'){const g=ctx.createLinearGradient(0,H*.18,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.26)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}else if(state==='playing'){if(activeLoop){ctx.fillStyle='rgba(255,153,34,.055)';ctx.fillRect(0,0,W,H)}else if(player.boost>.02){let a=clamp(player.boost*.18,0,.09);ctx.fillStyle='rgba(255,70,178,'+a+')';ctx.fillRect(0,0,W,H)}else if(driftLeft>.25){let a=clamp((driftLeft-.25)/.41,0,1)*.042;ctx.fillStyle='rgba(248,164,77,'+a+')';ctx.fillRect(0,0,W,H)}}}
 const FIX=1/120;
 let lastPreviewAt=0;
 function drawGaragePreview(ts){
