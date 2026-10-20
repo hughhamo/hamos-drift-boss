@@ -46,7 +46,9 @@ export default async function leaderboard(req){
     // Administrative corrections require a private key held ONLY in Netlify's environment.
     // The discoverable shortcut key '9' is never sufficient authorization.
     if(['adminList','adminEdit','adminClear'].includes(data.action)){
-      if(!validAdminKey(data.adminKey))return bad('Admin access denied. Check HAMOS_MODERATOR_KEY in Netlify.',403);
+      const configuredSecret=process.env.HAMOS_MODERATOR_KEY||'';
+      if(configuredSecret.length<24)return bad('The server has no valid HAMOS_MODERATOR_KEY. Set at least 24 characters in Netlify Production and deploy again.',503);
+      if(!validAdminKey(data.adminKey))return bad('The entered password does not match the Netlify Production password. Check for extra spaces or replace and redeploy.',403);
       if(data.action==='adminList'){
         const rows=(await scores(store)).slice(0,250);
         return json({players:rows.length,rows});
