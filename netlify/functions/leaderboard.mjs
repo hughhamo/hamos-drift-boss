@@ -1,6 +1,7 @@
 import { getStore } from '@netlify/blobs';
 
 const cleanName = v => String(v ?? '').trim().replace(/[^a-zA-Z0-9 _-]/g,'').replace(/\s+/g,' ').slice(0,18);
+const cleanFull = v => String(v ?? '').trim().replace(/[^a-zA-ZÀ-ž '\-]/g,'').replace(/\s+/g,' ').slice(0,48);
 const isID = v => typeof v==='string' && /^[0-9a-f-]{36}$/i.test(v);
 const json = (data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const bad = (message,status=400)=>json({error:message},status);
@@ -14,7 +15,7 @@ async function scores(store){
     cursor=page.cursor;
   }while(cursor&&records.length<3000);
   return records.filter(x=>x&&typeof x.name==='string'&&Number.isInteger(x.score))
-    .map(x=>({name:cleanName(x.name),score:x.score,id:x.id,updatedAt:x.updatedAt||''}))
+    .map(x=>({name:cleanName(x.name),score:x.score,id:x.id,fullName:x.showFullName?cleanFull(x.fullName):'',updatedAt:x.updatedAt||''}))
     .sort((a,b)=>b.score-a.score||a.updatedAt.localeCompare(b.updatedAt));
 }
 export default async function leaderboard(req){
@@ -22,7 +23,7 @@ export default async function leaderboard(req){
     const store=getStore({name:storeName,consistency:'strong'});
     if(req.method==='GET'){
       const all=await scores(store);
-      return json({online:true,top:all.slice(0,50).map(({name,score,updatedAt})=>({name,score,updatedAt})),players:all.length});
+      return json({online:true,top:all.slice(0,50).map(({name,fullName,score,updatedAt})=>({name,fullName,score,updatedAt})),players:all.length});
     }
     if(req.method!=='POST')return bad('Method not allowed',405);
     if(Number(req.headers.get('content-length')||0)>2048)return bad('Too large',413);
@@ -30,7 +31,7 @@ export default async function leaderboard(req){
     if(raw.length>2048)return bad('Too large',413);
     let data;try{data=JSON.parse(raw)}catch{return bad('Invalid JSON')}
     if(!data||typeof data!=='object')return bad('Invalid data');
-    const id=data.playerId,name=cleanName(data.name);
+    const id=data.playerId,name=cleanName(data.name),fullName=cleanFull(data.fullName),showFullName=data.showFullName===true&&fullName.length>=3;
     if(!isID(id)||name.length<2)return bad('Choose a nickname of at least two characters');
     if(data.action==='start'){
       const runId=crypto.randomUUID();
@@ -40,7 +41,7 @@ export default async function leaderboard(req){
     if(data.action==='rename'){
       const key='scores/'+id,record=await store.get(key,{type:'json'});
       if(!record)return json({saved:false,message:'Finish a run to appear on the board.'});
-      await store.setJSON(key,{...record,name,updatedAt:new Date().toISOString()});
+      await store.setJSON(key,{...record,name,fullName,showFullName,updatedAt:new Date().toISOString()});
       return json({saved:true});
     }
     if(data.action==='finish'){
@@ -53,7 +54,7 @@ export default async function leaderboard(req){
       await store.setJSON(runKey,{...run,used:true});
       const key='scores/'+id,prior=await store.get(key,{type:'json'});
       const best=Math.max(score,Number(prior?.score)||0);
-      await store.setJSON(key,{id,name,score:best,updatedAt:new Date().toISOString()});
+      await store.setJSON(key,{...prior,id,name,fullName,showFullName,score:best,updatedAt:new Date().toISOString()});
       const all=await scores(store);
       return json({saved:true,score:best,isPersonalBest:score>(Number(prior?.score)||0),rank:all.findIndex(x=>x.id===id)+1,players:all.length});
     }
