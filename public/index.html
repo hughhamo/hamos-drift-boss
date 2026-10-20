@@ -121,6 +121,7 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 .leaderRow:nth-child(2){border-color:#d5e8ef66!important}.leaderRow:nth-child(3){border-color:#f3bc9266!important}.leaderRow strong{font-size:15px}.leaderRow .rank{font-size:16px}.leaderReal{display:block;margin:2px 0 0!important}
 #modalWindow{border-color:#83ebf597!important;box-shadow:0 28px 85px #000c,0 0 20px #75dafe14!important}
 @media(max-width:620px){#openShopMenu{left:9px!important;top:43%!important;width:91px!important;height:91px!important}#openAchievementsMenu{left:10px!important;top:66%!important;width:90px!important;height:90px!important}#openAchievementsMenu span{font-size:8px!important}}
+@keyframes rewardReady{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.64;transform:scale(.965)}}.achCard button.rewardReady{animation:rewardReady 1.35s ease-in-out infinite;border:1px solid #ffffff5a;box-shadow:0 0 0 2px #ffffff0a;will-change:transform,opacity}@media(prefers-reduced-motion:reduce){.achCard button.rewardReady{animation:none}}
 </style>
 </head>
 <body>
@@ -629,6 +630,22 @@ if(a[3]==='coins'&&!garageFree)account.wallet+=a[4];
 if(a[3]==='smoke'){let idx=SMOKE_OPTIONS.length+BONUS_SMOKE.indexOf(a[4]);if(!account.smokeOwned.includes(idx))account.smokeOwned.push(idx)}
 if(a[3]==='atmos'){let idx=ATMOSPHERES.length+BONUS_THEMES.findIndex(x=>x.name===a[4]);if(!account.atmosOwned.includes(idx))account.atmosOwned.push(idx)}
 if(!garageFree)saveAccount();renderAchievements()}
+let achievementSeen=null,achievementCheckTime=0;
+function checkNewAchievements(){
+ if(state!=='playing'||time<achievementCheckTime)return;
+ achievementCheckTime=time+.28;
+ if(!achievementSeen){achievementSeen=new Set();for(let i=0;i<ACH.length;i++)if(achProgress(ACH[i])>=ACH[i][2])achievementSeen.add(i);return}
+ for(let i=0;i<ACH.length;i++){
+  const a=ACH[i];
+  if(achievementSeen.has(i)||account.achievementClaims.includes(i)||achProgress(a)<a[2])continue;
+  achievementSeen.add(i);
+  const toast=$('perkToast');if(!toast)break;
+  toast.textContent='🏆 ACHIEVEMENT UNLOCKED · '+a[0]+' · '+(a[3]==='coins'?money(a[4])+' COINS':a[4].toUpperCase());
+  toast.classList.add('visible');if(toast.hideId)clearTimeout(toast.hideId);
+  toast.hideId=setTimeout(()=>toast.classList.remove('visible'),2700);
+  break;
+ }
+}
 function renderAchievements(){
  const icons=['🛞','🏎️','🌑','🪙','🔥','🎵','💰','🌃','🎣','💎','🕳️','👑','🎢','🍌','🥤','💸'];
  const colors=['#bd996c','#ff5263','#818aa8','#ffcd58','#ff7a39','#b281ff','#65e8ae','#fc65df','#6fd9ff','#70efbd','#9373cf','#ffd77a','#ffd655','#ffe251','#68e6ff','#4aea86'];
@@ -637,7 +654,7 @@ function renderAchievements(){
  +'<div class="achGrid">'+ACH.map((a,i)=>{
  const current=achProgress(a),done=garageFree||current>=a[2],claimed=account.achievementClaims.includes(i),pct=claimed||done?100:Math.min(100,Math.floor(100*current/a[2]));
  return (i===0?'<div class="achSection">🏁 SCORE CHALLENGES</div>':i===12?'<div class="achSection">✨ SPECIAL CHALLENGES</div>':'')
- +'<article class="achCard '+(done?'done':'')+'" style="--achaccent:'+colors[i]+';--achglow:color-mix(in srgb,'+colors[i]+' 20%,transparent)"><div class="achArt"><div class="achEmblem">'+icons[i]+'</div><span class="achStatus">'+(claimed?'COMPLETED':done?'READY TO CLAIM':'LOCKED')+'</span></div><h3>'+a[0]+'</h3><p class="achReward">'+(a[3]==='coins'?'🪙 '+money(a[4])+' BONUS COINS':a[3]==='atmos'?'🌌 '+a[4]+' ATMOSPHERE':'✦ '+a[4]+' TRAIL')+'</p><div class="achBar"><b style="width:'+pct+'%"></b></div><p>'+money(Math.min(current,a[2]))+' / '+money(a[2])+' '+(a[1]==='score'?'POINTS':a[1].toUpperCase())+'</p><button data-ach="'+i+'" '+(!done||claimed?'disabled':'')+'>'+(claimed?'✓ UNLOCKED':done?'CLAIM REWARD':'KEEP DRIVING')+'</button></article>';
+ +'<article class="achCard '+(done?'done':'')+'" style="--achaccent:'+colors[i]+';--achglow:color-mix(in srgb,'+colors[i]+' 20%,transparent)"><div class="achArt"><div class="achEmblem">'+icons[i]+'</div><span class="achStatus">'+(claimed?'COMPLETED':done?'READY TO CLAIM':'LOCKED')+'</span></div><h3>'+a[0]+'</h3><p class="achReward">'+(a[3]==='coins'?'🪙 '+money(a[4])+' BONUS COINS':a[3]==='atmos'?'🌌 '+a[4]+' ATMOSPHERE':'✦ '+a[4]+' TRAIL')+'</p><div class="achBar"><b style="width:'+pct+'%"></b></div><p>'+money(Math.min(current,a[2]))+' / '+money(a[2])+' '+(a[1]==='score'?'POINTS':a[1].toUpperCase())+'</p><button data-ach="'+i+'" '+(!done||claimed?'disabled':'')+' class="'+(done&&!claimed?'rewardReady':'')+'">'+(claimed?'✓ UNLOCKED':done?'CLAIM REWARD':'KEEP DRIVING')+'</button></article>';
  }).join('')+'</div>';
  for(const b of modalContent.querySelectorAll('[data-ach]'))b.addEventListener('click',()=>claimAchievement(+b.dataset.ach));
 }
@@ -736,7 +753,7 @@ function endGame(){
  player.fallPitchVel+=(player.fallSideZ||.25)*.75;
  sound(125,.37,.08);updateBest(true);finishCompetitionRun(score,time);
 }
-function updateBest(save=false){
+function updateBest(save=false){checkNewAchievements();
  if(score>best){best=score;bestEl.textContent=String(best).padStart(6,'0')}
  if(save&&!usedAssistThisRun&&score>account.verifiedBest){account.verifiedBest=score;saveAccount()}
  if(save||time-scoreSavedAt>3){scoreSavedAt=time;try{localStorage.setItem('drift-boss-premium-best',String(best))}catch(e){};/* worldwide rankings submit only when a run actually finishes */}
