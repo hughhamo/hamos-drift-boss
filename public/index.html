@@ -1482,8 +1482,10 @@ function drawSkids(){
   if(tier===9&&i%3===0){const p=project(vec(B.x,.45,B.z));if(p){ctx.strokeStyle='hsla('+hue%360+',100%,78%,'+fade*.6+')';ctx.lineWidth=1.9;ctx.beginPath();ctx.arc(p.x,p.y,Math.max(2,11*fade),time*2+i,time*2+i+Math.PI*1.35);ctx.stroke();}}
  }
  for(let i=0;i<smoke.length;i++){
-  const p=smoke[i];if(Math.abs(p.x-camX)>80||Math.abs(p.z-camZ)>80)continue;const pos=project(vec(p.x,p.y,p.z));if(!pos||pos.depth>135)continue;
-  const tier=p.tier??0,fade=clamp(p.life/(p.maxLife||.65),0,1);
+  const p=smoke[i],tier=p.tier??0;
+  if(tier===15&&(Math.abs(p.x-camX)>80||Math.abs(p.z-camZ)>80))continue;
+  const pos=project(vec(p.x,p.y,p.z));if(!pos||(tier===15&&pos.depth>135))continue;
+  const fade=clamp(p.life/(p.maxLife||.65),0,1);
   const r=clamp(p.r*camera.zoom/pos.depth*(1+1.6*(1-fade)),1.2,45);
   ctx.save();const rot=(p.phase||0)+time*2.8;
   if([14,16].includes(tier)){ctx.restore();continue;}if(tier>=10){drawAchievementSmoke(ctx,pos,r,tier,fade,i);ctx.restore();continue;}if(tier===1){ctx.fillStyle='rgba(236,243,255,'+(fade*.21)+')';ctx.beginPath();ctx.arc(pos.x,pos.y,r*2.2,0,TAU);ctx.fill();}
