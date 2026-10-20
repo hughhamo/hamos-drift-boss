@@ -537,12 +537,41 @@ function closeModal(){
 $('modalClose').addEventListener('click',closeModal);
 modalWrap.addEventListener('pointerdown',e=>{if(e.target===modalWrap)closeModal()});
 for(const pair of [['openShopMenu','shop'],['openBoardMenu','board'],['openAchievementsMenu','achievements'],['openProfileMenu','profile']]){const el=$(pair[0]);if(el)el.addEventListener('click',()=>openModal(pair[1]))}
+
+let moderatorKey='',moderatorRows=[],moderatorError='';
+function openAdminPanel(){
+ if(modalWrap.classList.contains('open')){modalPage='admin';renderAdmin();return}
+ if(state==='menu')openModal('admin');
+}
+async function loadModeratorRows(){
+ moderatorError='Checking admin access…';renderAdmin();
+ try{
+  const d=await competitionRequest({action:'adminList',adminKey:moderatorKey});
+  moderatorRows=d.rows||[];moderatorError='';
+ }catch(e){moderatorRows=[];moderatorError=e.message||'Admin access unavailable';}
+ renderAdmin();
+}
+function renderAdmin(){
+ const esc=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+ modalContent.innerHTML='<p class="modalText">ADMIN ONLY · Correct misleading nicknames on the worldwide board. This does not change scores. Never publish your admin password.</p><input id="modKey" type="password" autocomplete="off" placeholder="Private moderation key (configured in Netlify)" value="'+esc(moderatorKey)+'"><button id="modLoad" class="primaryMini">LOAD PLAYERS</button><p class="modalText" id="modError">'+esc(moderatorError)+'</p><div>'+moderatorRows.map((p,i)=>'<div class="tierCard" style="margin-bottom:12px"><div class="tierTitle">#'+(i+1)+' '+esc(p.name)+' · '+Number(p.score).toLocaleString()+' points</div><input data-name="'+i+'" maxlength="18" value="'+esc(p.name)+'" placeholder="Corrected nickname"><input data-full="'+i+'" maxlength="48" value="'+esc(p.fullName)+'" placeholder="Optional corrected display name"><label class="modalText"><input data-show="'+i+'" type="checkbox" '+(!!p.fullName?'checked':'')+'> Show secondary name</label><input data-reason="'+i+'" maxlength="160" placeholder="Reason for correction (required)"><button data-save="'+i+'" class="primaryMini">SAVE CORRECTION</button><button data-clear="'+i+'" class="previewMini" style="margin-left:8px">REMOVE MODERATOR OVERRIDE</button></div>').join('')+'</div>';
+ $('modLoad').onclick=()=>{moderatorKey=$('modKey').value;loadModeratorRows()};
+ for(const b of modalContent.querySelectorAll('[data-save]'))b.onclick=async()=>{
+  const i=+b.dataset.save,p=moderatorRows[i];b.disabled=true;
+  try{await competitionRequest({action:'adminEdit',adminKey:moderatorKey,targetId:p.id,newName:modalContent.querySelector('[data-name="'+i+'"]').value,newFullName:modalContent.querySelector('[data-full="'+i+'"]').value,showFullName:modalContent.querySelector('[data-show="'+i+'"]').checked,reason:modalContent.querySelector('[data-reason="'+i+'"]').value});await loadModeratorRows();await loadBoard()}
+  catch(e){moderatorError=e.message;renderAdmin()}
+ };
+ for(const b of modalContent.querySelectorAll('[data-clear]'))b.onclick=async()=>{
+  const i=+b.dataset.clear,p=moderatorRows[i];b.disabled=true;
+  try{await competitionRequest({action:'adminClear',adminKey:moderatorKey,targetId:p.id});await loadModeratorRows();await loadBoard()}
+  catch(e){moderatorError=e.message;renderAdmin()}
+ };
+}
 function renderModal(){
- const titles={shop:'CUSTOM GARAGE',board:'ALL-TIME HIGH SCORES',profile:'YOUR PLAYER PROFILE',achievements:'ACHIEVEMENTS'};
+ const titles={shop:'CUSTOM GARAGE',board:'ALL-TIME HIGH SCORES',profile:'YOUR PLAYER PROFILE',achievements:'ACHIEVEMENTS',admin:'PLAYER NAME MODERATION'};
  modalTitle.textContent=titles[modalPage];
  if(modalPage==='shop')renderShop();
  if(modalPage==='profile')renderProfile();
- if(modalPage==='board')renderBoard();if(modalPage==='achievements')renderAchievements();
+ if(modalPage==='board')renderBoard();if(modalPage==='achievements')renderAchievements();if(modalPage==='admin')renderAdmin();
 }
 const ACH=[
 ['First 2K','score',2000,'smoke','Dirt Trail'],['First 5K','score',5000,'smoke','Red Trail'],['First 15K','score',15000,'atmos','Dark Mode'],['First 20K','score',20000,'coins',45000],
@@ -556,13 +585,13 @@ const BONUS_THEMES=[
 {name:'Tokyo',price:0,desc:'Tokyo-inspired neon streets, pink, violet and cyan',bg:['#06051b','#32105a','#ad1c6c','#070a22'],glow:['#ff4bac','#40f6ff'],deck:['#221e48','#48276b','#1b3750'],neon:['#ff72c1','#43fcf5']}];
 const ALL_THEMES=[...ATMOSPHERES,...BONUS_THEMES];
 function achProgress(a){return a[1]==='score'?Math.max(best,account.verifiedBest):Number(account.achievementCounts[a[1]])||0}
-function claimAchievement(i){const a=ACH[i];if(!a||account.achievementClaims.includes(i)||achProgress(a)<a[2])return;
+function claimAchievement(i){const a=ACH[i];if(!a||account.achievementClaims.includes(i)||(!garageFree&&achProgress(a)<a[2]))return;
 account.achievementClaims.push(i);
-if(a[3]==='coins')account.wallet+=a[4];
+if(a[3]==='coins'&&!garageFree)account.wallet+=a[4];
 if(a[3]==='smoke'){let idx=SMOKE_OPTIONS.length+BONUS_SMOKE.indexOf(a[4]);if(!account.smokeOwned.includes(idx))account.smokeOwned.push(idx)}
 if(a[3]==='atmos'){let idx=ATMOSPHERES.length+BONUS_THEMES.findIndex(x=>x.name===a[4]);if(!account.atmosOwned.includes(idx))account.atmosOwned.push(idx)}
-saveAccount();renderAchievements()}
-function renderAchievements(){modalContent.innerHTML='<p class="modalText">Reach milestone scores and collect special pickups to unlock exclusive drift effects and atmospheres. Claim once, keep forever.</p><div class="walletBar">✦ '+account.achievementClaims.length+' / '+ACH.length+' UNLOCKED · '+money(account.wallet)+' COINS</div><div class="achGrid">'+ACH.map((a,i)=>{const val=achProgress(a),done=val>=a[2],claimed=account.achievementClaims.includes(i);return '<div class="achCard '+(done?'done':'')+'"><h3>'+(done?'✦ ':'🔒 ')+a[0]+'</h3><p>REWARD: '+(a[3]==='coins'?money(a[4])+' coins':a[4])+'</p><div class="achBar"><b style="width:'+Math.min(100,100*val/a[2])+'%"></b></div><p>'+money(Math.min(val,a[2]))+' / '+money(a[2])+'</p><button data-ach="'+i+'" '+(!done||claimed?'disabled':'')+'>'+(claimed?'✓ CLAIMED':done?'CLAIM REWARD':'LOCKED')+'</button></div>'}).join('')+'</div>';for(const b of modalContent.querySelectorAll('[data-ach]'))b.addEventListener('click',()=>claimAchievement(+b.dataset.ach))}
+if(!garageFree)saveAccount();renderAchievements()}
+function renderAchievements(){modalContent.innerHTML='<p class="modalText">Reach milestone scores and collect special pickups to unlock exclusive drift effects and atmospheres. Claim once, keep forever.</p><div class="walletBar">✦ '+account.achievementClaims.length+' / '+ACH.length+' UNLOCKED · '+money(account.wallet)+' COINS</div><div class="achGrid">'+ACH.map((a,i)=>{const val=achProgress(a),done=garageFree||val>=a[2],claimed=account.achievementClaims.includes(i),secretUnlocked=garageFree;return '<div class="achCard '+(done?'done':'')+'"><h3>'+(done?'✦ ':'🔒 ')+a[0]+'</h3><p>REWARD: '+(a[3]==='coins'?money(a[4])+' coins':a[4])+'</p><div class="achBar"><b style="width:'+Math.min(100,100*val/a[2])+'%"></b></div><p>'+money(Math.min(val,a[2]))+' / '+money(a[2])+'</p><button data-ach="'+i+'" '+(!done||claimed?'disabled':'')+'>'+(claimed?'✓ CLAIMED':done?'CLAIM REWARD':'LOCKED')+'</button></div>'}).join('')+'</div>';for(const b of modalContent.querySelectorAll('[data-ach]'))b.addEventListener('click',()=>claimAchievement(+b.dataset.ach))}
 function renderShop(){
  const isSmoke=shopTab==='smoke',list=isSmoke?ALL_SMOKES:ALL_THEMES;
  const previewIndex=isSmoke?(previewSmokeIndex??account.smokeEquipped):(previewAtmosIndex??account.atmosEquipped);
@@ -574,9 +603,9 @@ function renderShop(){
  <div class="modalTabs"><button type="button" data-tab="smoke" class="${isSmoke?'active':''}">💨 DRIFT STYLES</button><button type="button" data-tab="atmos" class="${!isSmoke?'active':''}">🌌 ATMOSPHERES</button></div>
  <p class="modalText">Earn coins from driving. Every item is a permanent unlock. Use PREVIEW before buying to see the style. Buying garage items never affects your current run’s car upgrades.</p>${previewBox}
  <div class="tierGrid">${list.map((v,i)=>{
- const name=isSmoke?v[0]:v.name,price=isSmoke?v[1]:v.price,desc=isSmoke?v[2]:v.desc,owns=account[shopTab+'Owned'].includes(i)||(garageFree&&(isSmoke?i<SMOKE_OPTIONS.length:i<ATMOSPHERES.length)),selected=account[shopTab+'Equipped']===i;
+ const name=isSmoke?v[0]:v.name,price=isSmoke?v[1]:v.price,desc=isSmoke?v[2]:v.desc,owns=account[shopTab+'Owned'].includes(i)||garageFree,selected=account[shopTab+'Equipped']===i;
  const swatch=isSmoke?`<div class="themePreview" style="background:linear-gradient(90deg,${v[3]}0.88), ${v[4]}0.88))"></div>`:`<div class="themePreview" style="background:linear-gradient(90deg,${v.bg.join(',')})"></div>`;
- const exclusive=isSmoke?i>=SMOKE_OPTIONS.length:i>=ATMOSPHERES.length,afford=!exclusive&&(garageFree||account.wallet>=price);
+ const exclusive=isSmoke?i>=SMOKE_OPTIONS.length:i>=ATMOSPHERES.length,afford=garageFree||(!exclusive&&account.wallet>=price);
  return `<div class="tierCard ${selected?'equipped':''}"><div class="tierTitle">${i+1}. ${name}</div>${swatch}<div class="tierSub">${desc}</div><div class="price">${price===0||garageFree?'FREE':money(price)+' coins'}</div><div class="tierActions"><button type="button" class="previewMini ${(previewIndex===i)?'active':''}" data-preview="${i}">${previewIndex===i?'PREVIEWING':'PREVIEW'}</button><button type="button" data-buy="${i}" ${selected?'disabled':''} ${(owns||afford)?'':'disabled'}>${selected?'✓ EQUIPPED':owns?'EQUIP':afford?'BUY':exclusive?'ACHIEVEMENT':'NEED '+money(price-account.wallet)}</button></div></div>`;
  }).join('')}</div>`;
  for(const b of modalContent.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>{shopTab=b.dataset.tab;previewSmokeIndex=null;previewAtmosIndex=null;renderShop()});
@@ -584,13 +613,13 @@ function renderShop(){
  for(const b of modalContent.querySelectorAll('[data-preview]'))b.addEventListener('click',()=>{if(shopTab==='smoke')previewSmokeIndex=+b.dataset.preview;else previewAtmosIndex=+b.dataset.preview;resize();renderShop()});
 }
 function purchaseItem(i){
- const list=shopTab==='smoke'?ALL_SMOKES:ALL_THEMES,item=list[i];if(!item)return;if((shopTab==='smoke'?i>=SMOKE_OPTIONS.length:i>=ATMOSPHERES.length)&&!account[shopTab+'Owned'].includes(i))return;
+ const list=shopTab==='smoke'?ALL_SMOKES:ALL_THEMES,item=list[i];if(!item)return;if(!garageFree&&(shopTab==='smoke'?i>=SMOKE_OPTIONS.length:i>=ATMOSPHERES.length)&&!account[shopTab+'Owned'].includes(i))return;
  const price=shopTab==='smoke'?item[1]:item.price,owned=account[shopTab+'Owned'];
  if(!owned.includes(i)){
   if(!garageFree&&account.wallet<price)return;
-  if(!garageFree)account.wallet-=price;owned.push(i);
+  if(!garageFree)account.wallet-=price;if(!garageFree)owned.push(i);
  }
- account[shopTab+'Equipped']=i;saveAccount();
+ if(garageFree){account[shopTab+'Equipped']=i;}else{account[shopTab+'Equipped']=i;saveAccount();}
  if(shopTab==='atmos')previewAtmosIndex=null; if(shopTab==='smoke')previewSmokeIndex=null; if(shopTab==='atmos')resize();
  if(soundEnabled)sound(850,.13,.035);
  renderShop();
@@ -706,7 +735,7 @@ async function confirmAccountReset(){
 }
 $('cancelReset').addEventListener('click',cancelAccountReset);
 $('confirmReset').addEventListener('click',confirmAccountReset);
-function keydown(e){if(e.code==='KeyR'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();if(e.repeat)return;if(resetPending){confirmAccountReset()}else showResetWarning();return}if(resetPending||resetBusy)return;if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Digit9'||e.code==='Numpad9'){e.preventDefault();if(e.repeat)return;garageFree=!garageFree;if(modalPage==='shop'&&modalWrap.classList.contains('open'))renderShop();return}if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();if(e.repeat)return;if(state==='menu'||state==='dead'||state==='finished'){restart();return}else if(state==='paused')resume();held=true}else if(e.code==='Escape'){if(state==='playing')displayOverlay('paused');else if(state==='paused')resume()}}
+function keydown(e){if(e.code==='KeyR'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();if(e.repeat)return;if(resetPending){confirmAccountReset()}else showResetWarning();return}if(resetPending||resetBusy)return;if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Digit9'||e.code==='Numpad9'){e.preventDefault();if(e.repeat)return;garageFree=!garageFree;if(modalWrap.classList.contains('open'))renderModal();if(garageFree&&state==='menu')openAdminPanel();return}if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();if(e.repeat)return;if(state==='menu'||state==='dead'||state==='finished'){restart();return}else if(state==='paused')resume();held=true}else if(e.code==='Escape'){if(state==='playing')displayOverlay('paused');else if(state==='paused')resume()}}
 function keyup(e){if(resetPending||resetBusy||modalWrap.classList.contains('open'))return;if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();held=false}}
 addEventListener('keydown',keydown);addEventListener('keyup',keyup);addEventListener('blur',()=>{held=false;touchHeld=false;if(state==='playing')displayOverlay('paused')});
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();if(state==='menu'){if(isCarHit(e.clientX,e.clientY)){openModal('profile');return}restart();return}else if(state==='dead'||state==='finished')restart();else if(state==='paused')resume();touchHeld=true});addEventListener('pointerup',()=>touchHeld=false);addEventListener('pointercancel',()=>touchHeld=false);
