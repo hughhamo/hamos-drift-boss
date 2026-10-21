@@ -22,6 +22,7 @@ function cleanProfile(raw){
  smokeOwned:cleanNums(p.smokeOwned,32),smokeEquipped:reasonable(p.smokeEquipped,31),
  atmosOwned:cleanNums(p.atmosOwned,40),atmosEquipped:reasonable(p.atmosEquipped,39),
  carOwned:cleanNums(p.carOwned,10),carEquipped:reasonable(p.carEquipped,9),
+ carSmoke:Array.isArray(p.carSmoke)&&p.carSmoke.length===10?p.carSmoke.map(x=>Number.isInteger(x)&&x>=0&&x<20?x:0):Array(10).fill(reasonable(p.smokeEquipped,19)),
  verifiedBest:reasonable(p.verifiedBest,50000000),
  achievementClaims:cleanNums(p.achievementClaims,32),
  achievementCounts:{loops:reasonable(counts.loops,1000000),bananas:reasonable(counts.bananas,1000000),green:reasonable(counts.green,1000000),red:reasonable(counts.red,1000000)},
