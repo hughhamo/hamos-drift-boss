@@ -129,6 +129,35 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
  color:#fff0bc;font-weight:1000;font-size:12px;letter-spacing:.12em;white-space:nowrap;text-align:center}
 #doubleScoreBadge[hidden]{display:none!important}
 @media(max-width:650px){#doubleScoreBadge{top:77px;font-size:10px;padding:5px 9px;letter-spacing:.03em}}
+
+@keyframes hallRainbow{0%{background-position:0% 50%}100%{background-position:220% 50%}}
+@keyframes goldBreath{0%,100%{text-shadow:0 0 7px #f8bd4a55}50%{text-shadow:0 0 17px #ffce5daa,0 0 28px #ffd86e55}}
+.leaderRow:nth-child(-n+3){min-height:68px;background:linear-gradient(90deg,#74571b50,#141a3b40);font-size:16px;font-weight:1000}
+.leaderRow:nth-child(-n+3)>span:nth-child(2){font-size:clamp(17px,2.9vw,25px);background:linear-gradient(90deg,#ff5fd6,#ffdc6c,#67f5ff,#bc75ff,#ff5fd6);background-size:220% 100%;color:transparent;background-clip:text;-webkit-background-clip:text;animation:hallRainbow 3s linear infinite}
+.leaderRow:nth-child(n+4):nth-child(-n+7)>span:nth-child(2){font-weight:950;color:#ffdb78;animation:goldBreath 2s ease-in-out infinite}
+.carArt{height:116px;border-radius:14px;background:radial-gradient(circle at 49% 78%,var(--cartrim),transparent 60%),linear-gradient(150deg,var(--carpaint),#111c39 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;margin:8px 0 12px;box-shadow:inset 0 0 35px #0007;text-shadow:0 2px 10px #0009}
+.carArt span{font-size:42px}.carArt b{font-size:11px;letter-spacing:.10em}
+#deathTopTen{margin:8px auto 12px;max-width:530px;text-align:left}
+#deathTopTen:not(:empty){border:1px solid #ffdb7770;background:#081b2caa;border-radius:13px;padding:8px 13px}
+#deathTopTen h3{font-size:13px;color:#ffe79a;text-align:center;letter-spacing:.14em;margin:4px 0 10px}
+.deathRank{display:grid;grid-template-columns:38px 1fr auto;gap:8px;align-items:center;border-bottom:1px solid #ffffff14;padding:4px 7px;font-size:12px}
+.deathRank:nth-of-type(-n+3) b{font-size:15px;color:#ffeaac;text-shadow:0 0 13px #f5bb62}
+.deathRank span:last-child{font-variant-numeric:tabular-nums;color:#b9eeff}
+#overlay .panel:has(#deathTopTen:not(:empty)){width:min(615px,100%);max-height:94vh;overflow-y:auto;touch-action:pan-y;padding:17px 22px}
+#overlay .panel:has(#deathTopTen:not(:empty)) h1{font-size:clamp(32px,5vw,48px)}
+#overlay .panel:has(#deathTopTen:not(:empty)) #message{margin:9px auto;font-size:12px}
+#releaseNotes{position:fixed;inset:0;z-index:70;background:#030916e8;backdrop-filter:blur(15px);display:flex;align-items:center;justify-content:center;padding:14px;touch-action:pan-y}
+#releaseNotes[hidden]{display:none!important}
+.releaseCard{width:min(650px,100%);max-height:94vh;overflow-y:auto;overscroll-behavior:contain;border:1px solid #eab96588;border-radius:22px;padding:clamp(20px,4vw,35px);background:linear-gradient(140deg,#14233b,#241238 80%);box-shadow:0 22px 95px #000d}
+.releaseCard h2{font-weight:1000;font-size:clamp(28px,5vw,44px);line-height:1;letter-spacing:-.06em;margin:8px 0 12px}
+.releaseCard p{color:#cedee9;line-height:1.55}.releaseCard li{margin:8px 0;color:#dbecf6}
+.releaseCard label{display:flex;gap:10px;align-items:center;margin:16px 0;background:#17314bb3;padding:12px;border-radius:9px;cursor:pointer}
+.releaseCard label input{width:20px;height:20px;accent-color:#89f9c8}
+.releaseCard button{font:900 13px system-ui;background:#e9e5ff;color:#142039;border-radius:11px;padding:11px 15px;border:0;cursor:pointer}
+.releaseCard button:disabled{opacity:.35;cursor:not-allowed}
+.cloudStatus{color:#a6eaff;font-size:12px;margin:10px 0}.cloudForm{display:grid;gap:9px;grid-template-columns:1fr 1fr;margin:12px 0}.cloudForm input{min-width:0;background:#06182d;border:1px solid #82a6c567;color:#fff;border-radius:9px;padding:11px}
+.cloudForm button{grid-column:1/-1;background:#8effd7;color:#061725;border:0;border-radius:9px;padding:12px;font-weight:950;cursor:pointer}
+@media(max-width:500px){.cloudForm{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -141,10 +170,26 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 <div id="speedCorner"><small>SPEED</small><strong id="speed">140</strong></div>
 <div id="coinPanel"><div class="topline"><span class="coin-icon">★</span><span id="coinProgress">0 / 30</span><span id="coinTotal">0 TOTAL</span></div><div class="coin-track"><span id="coinTrackFill"></span></div><div class="coin-car">CURRENT CAR <strong id="carName">STREET HATCH</strong></div></div>
 <div id="upgradeToast"><span>GARAGE UPGRADE!</span><b id="upgradeName">SPORT COUPE</b><small>MORE GRIP · FASTER TOP SPEED</small></div>
-<div id="overlay" class="intro"><div class="panel"><div id="kicker" class="kicker">STARTING CAR · STREET HATCH</div><h1 id="headline"><span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em></h1><div id="message">PRESS SPACE TO PLAY</div><div id="onlineIntro">◈ <span id="onlineLinkStatus">CONNECTING LEADERBOARD…</span><small>CLICK THE CAR TO CHOOSE A NICKNAME &amp; COMPETE</small></div><div class="instruction"><span class="key">SPACE</span><span><b>HOLD</b> → drive diagonally right<br><b>RELEASE</b> → drive diagonally left</span></div><button class="cta" id="play">START DRIVING →</button><button id="backToModes" type="button">HOME</button><div class="hint">Tap or click to play on mobile</div></div></div>
+<div id="overlay" class="intro"><div class="panel"><div id="kicker" class="kicker">STARTING CAR · STREET HATCH</div><h1 id="headline"><span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em></h1><div id="message">PRESS SPACE TO PLAY</div><div id="deathTopTen"></div><div id="onlineIntro">◈ <span id="onlineLinkStatus">CONNECTING LEADERBOARD…</span><small>CLICK THE CAR TO CHOOSE A NICKNAME &amp; COMPETE</small></div><div class="instruction"><span class="key">SPACE</span><span><b>HOLD</b> → drive diagonally right<br><b>RELEASE</b> → drive diagonally left</span></div><button class="cta" id="play">START DRIVING →</button><button id="backToModes" type="button">HOME</button><div class="hint">Tap or click to play on mobile</div></div></div>
 
 <div id="garageLaunch"></div>
 <div class="menuTools"><button id="openShopMenu" type="button">🛠<span>GARAGE</span></button><button id="openAchievementsMenu" type="button">✦<span>ACHIEVEMENTS</span></button><button id="openBoardMenu" type="button">🏆<span>LEADERBOARD</span></button><button id="openProfileMenu" type="button">👤 MY NAME</button></div><div id="menuCarHint">CLICK THE CAR TO CHOOSE YOUR RACING NICKNAME</div>
+<div id="releaseNotes" hidden role="dialog" aria-modal="true" aria-labelledby="releaseHeading"><section class="releaseCard">
+ <div style="color:#ffc970;font-weight:1000;letter-spacing:.17em">HAMOS DRIFT BOSS · HUGE NEW UPDATE</div>
+ <h2 id="releaseHeading">THE GARAGE<br><span style="color:#8de8ff">REVOLUTION</span> 🏁</h2>
+ <p style="font-weight:900;color:#fff0b3">🚀 SHARE THE GAME WITH YOUR FRIENDS! Every racer matters — send <a style="color:#8fffea" href="https://hamosdriftboss.netlify.app">hamosdriftboss.netlify.app</a> to your group chats and compete for the worldwide top ten.</p>
+ <button id="releaseCopy" type="button">📋 COPY GAME LINK</button>
+ <ul><li>🏎️ 10 garage cars, from a free hatchback to the Dublin Bus 44, Tokyo Drift and Lamborghini Drift King</li>
+ <li>🌌 All atmospheres FREE, plus 10 new colour worlds</li>
+ <li>🔩 Nuts & bolts upgrade your engine, while wallet coins buy your cars and drift styles</li>
+ <li>💜 PURPLE TURBO ROAD: +50% speed and 15 bonus bolts</li>
+ <li>🏆 Top ten revealed after every run — fight for the rainbow podium!</li>
+ <li>🔐 Optional username/password cloud accounts to protect your progress</li>
+ <li>💨 Original drifts preserved, with permanent garage discounts</li>
+ <li>⚡ 48-hour DOUBLE SCORE launch event, ending automatically</li></ul>
+ <label><input type="checkbox" id="releaseRead">I have read the update notes.</label>
+ <button id="releaseConfirm" type="button" disabled style="width:100%">CONFIRM & START RACING →</button>
+ </section></div>
 <div id="modalWrap" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><section id="modalWindow"><div class="modalHead"><strong id="modalTitle">GARAGE</strong><button id="modalClose" type="button" aria-label="Close">×</button></div><div id="modalContent"></div></section></div>
 <div id="resetWarning" role="dialog" aria-modal="true" aria-labelledby="resetTitle"><div class="resetPanel"><div style="font-size:28px">⚠</div><h2 id="resetTitle">RESET YOUR ACCOUNT?</h2><p id="resetDetails">This permanently removes your leaderboard score, nickname, wallet, garage purchases, achievements and personal best from this browser. Other players' records will not change.</p><p><strong>Press R again to confirm</strong>, or cancel to keep everything.</p><div class="resetActions"><button id="cancelReset" type="button">CANCEL</button><button id="confirmReset" type="button">RESET ACCOUNT</button></div><p id="resetStatus" aria-live="polite"></p></div></div>
 <div id="perkToast" role="status" aria-live="polite"></div>
