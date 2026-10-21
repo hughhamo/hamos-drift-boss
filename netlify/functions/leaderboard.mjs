@@ -7,9 +7,14 @@ const isID = v => typeof v==='string' && /^[0-9a-f-]{36}$/i.test(v);
 const json = (data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const bad = (message,status=400)=>json({error:message},status);
 const storeName='drift-boss-global-leaderboard';
-// One-hour promo: 12:33:07–13:33:07 Irish summer time, 21 October 2026.
-const DOUBLE_START=Date.parse('2026-10-21T11:33:07Z');
-const DOUBLE_END=Date.parse('2026-10-21T12:33:07Z');
+// Release event begins with the first production request after deployment and
+// expires 48 hours later without needing a second deployment. Stored per site.
+const RELEASE_KEY='events/garage-release-20261021';
+async function releaseEvent(store){
+ let saved=await store.get(RELEASE_KEY,{type:'json'});
+ if(!saved||!Number.isFinite(saved.start)){saved={start:Date.now()};await store.setJSON(RELEASE_KEY,saved);}
+ return {start:saved.start,end:saved.start+48*3600*1000};
+}
 function validAdminKey(value){
  const secret=process.env.HAMOS_MODERATOR_KEY||'';
  if(secret.length<24||typeof value!=='string')return false;
@@ -40,9 +45,10 @@ async function scores(store,includeBanned=false){
 export default async function leaderboard(req){
   try{
     const store=getStore({name:storeName,consistency:'strong'});
+    const event=await releaseEvent(store);
     if(req.method==='GET'){
       const all=await scores(store);
-      return json({online:true,top:all.slice(0,50).map(({name,fullName,score,updatedAt})=>({name,fullName,score,updatedAt})),players:all.length});
+      return json({online:true,top:all.slice(0,50).map(({name,fullName,score,updatedAt})=>({name,fullName,score,updatedAt})),players:all.length,event,serverNow:Date.now()});
     }
     if(req.method!=='POST')return bad('Method not allowed',405);
     if(Number(req.headers.get('content-length')||0)>2048)return bad('Too large',413);
@@ -136,7 +142,7 @@ export default async function leaderboard(req){
       const now=Date.now(),elapsed=(now-run.startedAt)/1000;
       // The server independently checks whether the run overlapped the limited-time
       // event. Paused runs may earn less bonus time than the actual clock overlap.
-      const eventOverlap=Math.max(0,(Math.min(now,DOUBLE_END)-Math.max(run.startedAt,DOUBLE_START))/1000);
+      const eventOverlap=Math.max(0,(Math.min(now,event.end)-Math.max(run.startedAt,event.start))/1000);
       const permittedBonus=eventOverlap>0?Math.min(seconds,eventOverlap+7):0;
       const expectedScore=Math.floor((seconds+bonusSeconds)*145);
       if(elapsed<0||elapsed>86400||seconds>elapsed+7||bonusSeconds>permittedBonus+.1||score>(elapsed+8+eventOverlap+7)*145||Math.abs(score-expectedScore)>3)return bad('Score verification failed',422);
