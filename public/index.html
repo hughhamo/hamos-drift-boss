@@ -774,12 +774,12 @@ const RELEASE_READ_KEY='hamos-motorsport-update-read-v2';
 let releasePromptOpen=false;
 function showNewsletterOnce(){
  let readPreviously=false;try{readPreviously=localStorage.getItem(RELEASE_READ_KEY)==='1'}catch(e){}
- if(readPreviously)return;
+ if(cloudLoggedIn?account.motorsportNewsSeen===true:readPreviously)return;
  releasePromptOpen=true;$('releaseNotes').hidden=false;$('releaseRead').checked=false;$('releaseConfirm').disabled=true;
 }
 $('releaseRead').addEventListener('change',()=>{$('releaseConfirm').disabled=!$('releaseRead').checked});
 $('releaseConfirm').addEventListener('click',()=>{if(!$('releaseRead').checked)return;
- account.newsSeen=true;try{localStorage.setItem(RELEASE_READ_KEY,'1')}catch(e){}
+ account.newsSeen=true;account.motorsportNewsSeen=true;try{localStorage.setItem(RELEASE_READ_KEY,'1')}catch(e){}
  saveAccount();if(cloudLoggedIn)flushCloudSave();releasePromptOpen=false;$('releaseNotes').hidden=true;
 });
 $('releaseCopy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText('https://hamosdriftboss.netlify.app');$('releaseCopy').textContent='✓ LINK COPIED!'}catch(e){$('releaseCopy').textContent='Share: hamosdriftboss.netlify.app'}});
@@ -1161,7 +1161,7 @@ async function confirmAccountReset(){
   const result=await onlineApi.deleteAccount();
   if(!result?.deleted)throw Error('Could not remove your leaderboard score.');
   // Preserve all local files until the cloud reset has been acknowledged.
-  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true,coinAchievementMigrationV2:true,carSmoke:Array(10).fill(0)};
+  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true,coinAchievementMigrationV2:true,motorsportNewsSeen:true,carSmoke:Array(10).fill(0)};
   if(cloudLoggedIn)await cloudRequest({action:'reset',profile:blankProfile});
   resetGeneration++;
   onlineRunFinished=true;onlineRunPromise=null;
