@@ -169,7 +169,7 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 <div id="centerInfo"><span id="level"></span><div id="drift">DRIFT!</div><div id="bar"><div id="barInner"></div></div></div>
 <div id="speedCorner"><small>SPEED</small><strong id="speed">140</strong></div>
 <div id="coinPanel"><div class="topline"><span class="coin-icon">★</span><span id="coinProgress">0 / 30</span><span id="coinTotal">0 TOTAL</span></div><div class="coin-track"><span id="coinTrackFill"></span></div><div class="coin-car">CURRENT CAR <strong id="carName">STREET HATCH</strong></div></div>
-<div id="upgradeToast"><span>GARAGE UPGRADE!</span><b id="upgradeName">SPORT COUPE</b><small>MORE GRIP · FASTER TOP SPEED</small></div>
+<div id="upgradeToast"><span>ENGINE UPGRADE · SPEED & GRIP</span><b id="upgradeName">SPORT COUPE</b><small>MORE GRIP · FASTER TOP SPEED</small></div>
 <div id="overlay" class="intro"><div class="panel"><div id="kicker" class="kicker">STARTING CAR · STREET HATCH</div><h1 id="headline"><span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em></h1><div id="message">PRESS SPACE TO PLAY</div><div id="deathTopTen"></div><div id="onlineIntro">◈ <span id="onlineLinkStatus">CONNECTING LEADERBOARD…</span><small>CLICK THE CAR TO CHOOSE A NICKNAME &amp; COMPETE</small></div><div class="instruction"><span class="key">SPACE</span><span><b>HOLD</b> → drive diagonally right<br><b>RELEASE</b> → drive diagonally left</span></div><button class="cta" id="play">START DRIVING →</button><button id="backToModes" type="button">HOME</button><div class="hint">Tap or click to play on mobile</div></div></div>
 
 <div id="garageLaunch"></div>
@@ -264,7 +264,7 @@ const ATMOSPHERES=[
 {"name":"Obsidian Gold","price":0,"desc":"Obsidian Gold · exclusive colourway","bg":["#050506","#17171a","#343031","#030306"],"glow":["#ffc849","#fff0ba"],"deck":["#202024","#363035","#18181c"],"neon":["#ffca43","#fff4a6"]},
 {"name":"Aurora Dream","price":0,"desc":"Aurora Dream · exclusive colourway","bg":["#080d23","#1d3660","#3d9e8c","#0b1330"],"glow":["#7cf9e6","#cf88ff"],"deck":["#24395c","#377c7a","#1d2b55"],"neon":["#8affb0","#d8a0ff"]}
 ];
-let account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true};
+let account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:false,worldMigrationV3:false};
 try{const a=JSON.parse(localStorage.getItem(DB_SAVE_KEY)||'{}');account={...account,...a};}catch(e){}
 account.wallet=Number.isFinite(+account.wallet)?Math.max(0,Math.floor(+account.wallet)):0;
 // Old achievement-theme indices 8 and 9 moved after the ten new base atmospheres.
@@ -344,7 +344,7 @@ function upgradeCar(levels=1){
  carTier+=levels;
  if(carTier>=HYPERCAR_TIER)removeHypercarRamps();
  upgradeFlash=1.35;
- upgradeName.textContent=carLabel();
+ upgradeName.textContent='ENGINE LV '+(carTier+1)+' · '+carLabel();
  upgradeToast.classList.add('visible');
  screenShake=.13;
  sound(940,.19,.045);
@@ -1048,19 +1048,22 @@ async function confirmAccountReset(){
   if(!onlineApi)throw Error('Leaderboard is offline. Try again when connected.');
   const result=await onlineApi.deleteAccount();
   if(!result?.deleted)throw Error('Could not remove your leaderboard score.');
+  // Preserve all local files until the cloud reset has been acknowledged.
+  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true};
+  if(cloudLoggedIn)await cloudRequest({action:'reset',profile:blankProfile});
   resetGeneration++;
   onlineRunFinished=true;onlineRunPromise=null;
   try{localStorage.removeItem(DB_SAVE_KEY);localStorage.removeItem('drift-boss-premium-best');if(!cloudLoggedIn)localStorage.removeItem(COMPETITION_ID_KEY)}catch(e){}
   if(!cloudLoggedIn){competitionId=createCompetitionId();try{localStorage.setItem(COMPETITION_ID_KEY,competitionId)}catch(e){}}
   // Signed-in accounts keep their linked ID so new scores aren't orphaned.
-  account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],smokeEquipped:0,atmosEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false};
+  account=blankProfile;
   best=0;score=0;time=0;bonusScoreSeconds=0;coinCount=0;garageFree=false;
   bestEl.textContent='000000';scoreEl.textContent='000000';
   previewSmokeIndex=null;previewAtmosIndex=null;
-  saveAccount();if(cloudLoggedIn)await cloudRequest({action:'reset',profile:account});resetPending=false;$('resetWarning').classList.remove('active');
+  saveAccount();resetPending=false;$('resetWarning').classList.remove('active');
   modalWrap.classList.remove('open');modalWasPlaying=false;
   resize();showMainMenu();await loadBoard();
- }catch(e){$('resetStatus').textContent=(e?.message||'Reset failed')+' Your progress is safe.';}
+ }catch(e){$('resetStatus').textContent=(e?.message||'Reset failed')+' Your local progress was not cleared. Your leaderboard entry may already have been removed.';}
  finally{resetBusy=false;ok.disabled=false;cancel.disabled=false}
 }
 $('cancelReset').addEventListener('click',cancelAccountReset);
