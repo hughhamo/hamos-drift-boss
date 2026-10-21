@@ -687,7 +687,7 @@ async function finishCompetitionRun(finalScore,seconds){
  try{
   const session=await onlineRunPromise;
   if(!session?.runId)return;
-  const result=await onlineApi.finish(session.runId,finalScore,seconds,account.nickname,bonusScoreSeconds);
+  const result=await onlineApi.finish(session.runId,finalScore,seconds,account.nickname,bonusScoreSeconds,purpleScoreSeconds);
   if(result.top){globalBoard=result.top;if(state==='dead')updateDeathLeaderboard();}
   if(submissionGeneration!==resetGeneration)return;
   boardStatus='LIVE WORLDWIDE · Latest game result saved';
@@ -1094,7 +1094,7 @@ async function initOnlineLeaderboard(){
  onlineApi={
   load:()=>competitionRequest(),
   start:name=>competitionRequest({action:'start',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName}),
-  finish:(runId,score,seconds,name,bonusSeconds)=>competitionRequest({action:'finish',playerId:competitionId,runId,score,seconds,bonusSeconds,name,fullName:account.fullName,showFullName:account.showFullName}),
+  finish:(runId,score,seconds,name,bonusSeconds,purpleSeconds)=>competitionRequest({action:'finish',playerId:competitionId,runId,score,seconds,bonusSeconds,purpleSeconds,name,fullName:account.fullName,showFullName:account.showFullName}),
   rename:name=>competitionRequest({action:'rename',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName}),
   deleteAccount:()=>competitionRequest({action:'delete',playerId:competitionId})
  };
