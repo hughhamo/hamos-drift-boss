@@ -1046,7 +1046,7 @@ async function confirmAccountReset(){
   best=0;score=0;time=0;bonusScoreSeconds=0;coinCount=0;garageFree=false;
   bestEl.textContent='000000';scoreEl.textContent='000000';
   previewSmokeIndex=null;previewAtmosIndex=null;
-  saveAccount();if(cloudLoggedIn)await cloudRequest({action:'save',profile:account});resetPending=false;$('resetWarning').classList.remove('active');
+  saveAccount();if(cloudLoggedIn)await cloudRequest({action:'reset',profile:account});resetPending=false;$('resetWarning').classList.remove('active');
   modalWrap.classList.remove('open');modalWasPlaying=false;
   resize();showMainMenu();await loadBoard();
  }catch(e){$('resetStatus').textContent=(e?.message||'Reset failed')+' Your progress is safe.';}
