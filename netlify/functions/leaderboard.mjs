@@ -88,7 +88,7 @@ export default async function leaderboard(req){
           const quota=await chatStore.get('quota/'+day+'/'+data.playerId,{type:'json'});
           remaining=Math.max(0,2-Math.min(2,Math.max(0,Number(quota?.used)||0)));
         }
-        return json({messages:feed.slice(-50).map(({id,name,text,at})=>({id,name,text,at})),limitPerDay:2,maxWords:10,unlockScore:20000,remaining});
+        return json({messages:feed.slice(-50).map(({id,name,text,at})=>({id,name,text,at})),limitPerDay:2,maxWords:10,unlockScore:25000,remaining});
       }
       const id=data.playerId;
       if(!isID(id)||!(await canEditLinkedPlayer(req,id)))return bad('Sign in to your linked account to post',403);
@@ -111,7 +111,7 @@ export default async function leaderboard(req){
         }
         return json({reported:true});
       }
-      if(player.score<=20000)return bad('Gamechat unlocks once your verified best score exceeds 20,000 points',403);
+      if(player.score<25000)return bad('Gamechat unlocks at 25,000 verified points',403);
       const message=String(data.message||'').trim().replace(/\s+/g,' ');
       const words=message.split(' ').filter(Boolean);
       if(message.length<1||message.length>160||words.length>10)return bad('Send 1–10 words (160 characters maximum)');
@@ -219,8 +219,8 @@ export default async function leaderboard(req){
       return json({saved:true});
     }
     if(data.action==='finish'){
-      const {score,seconds,runId,bonusSeconds=0}=data;
-      if(!isID(runId)||!Number.isInteger(score)||score<1||score>50000000||!Number.isFinite(seconds)||seconds<0||seconds>86400||typeof bonusSeconds!=='number'||!Number.isFinite(bonusSeconds)||bonusSeconds<0||bonusSeconds>seconds+.03)return bad('Invalid score');
+      const {score,seconds,runId,bonusSeconds=0,purpleSeconds=0}=data;
+      if(!isID(runId)||!Number.isInteger(score)||score<1||score>50000000||!Number.isFinite(seconds)||seconds<0||seconds>86400||typeof bonusSeconds!=='number'||!Number.isFinite(bonusSeconds)||bonusSeconds<0||bonusSeconds>seconds+.03||typeof purpleSeconds!=='number'||!Number.isFinite(purpleSeconds)||purpleSeconds<0||purpleSeconds>seconds*.3001+.03)return bad('Invalid score');
       const runKey='runs/'+runId,run=await store.get(runKey,{type:'json'});
       if(!run||run.used||run.id!==id)return bad('Run expired or already submitted',409);
       const reset=await store.get('resets/'+id,{type:'json'});
@@ -230,8 +230,8 @@ export default async function leaderboard(req){
       // event. Paused runs may earn less bonus time than the actual clock overlap.
       const eventOverlap=Math.max(0,(Math.min(now,event.end)-Math.max(run.startedAt,event.start))/1000);
       const permittedBonus=eventOverlap>0?Math.min(seconds,eventOverlap+7):0;
-      const expectedScore=Math.floor((seconds+bonusSeconds)*145);
-      if(elapsed<0||elapsed>86400||seconds>elapsed+7||bonusSeconds>permittedBonus+.1||score>(elapsed+8+eventOverlap+7)*145||Math.abs(score-expectedScore)>3)return bad('Score verification failed',422);
+      const expectedScore=Math.floor((seconds+bonusSeconds+purpleSeconds)*145);
+      if(elapsed<0||elapsed>86400||seconds>elapsed+7||bonusSeconds>permittedBonus+.1||score>(elapsed+8+eventOverlap+7+(elapsed+8)*.3)*145||Math.abs(score-expectedScore)>3)return bad('Score verification failed',422);
       await store.setJSON(runKey,{...run,used:true});
       // Recheck right before writing, in case the player reset while a score was being verified.
       const latestReset=await store.get('resets/'+id,{type:'json'});
