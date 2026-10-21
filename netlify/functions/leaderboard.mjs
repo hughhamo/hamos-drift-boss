@@ -7,6 +7,9 @@ const isID = v => typeof v==='string' && /^[0-9a-f-]{36}$/i.test(v);
 const json = (data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const bad = (message,status=400)=>json({error:message},status);
 const storeName='drift-boss-global-leaderboard';
+// One-hour promo: 12:33:07–13:33:07 Irish summer time, 21 October 2026.
+const DOUBLE_START=Date.parse('2026-10-21T11:33:07Z');
+const DOUBLE_END=Date.parse('2026-10-21T12:33:07Z');
 function validAdminKey(value){
  const secret=process.env.HAMOS_MODERATOR_KEY||'';
  if(secret.length<24||typeof value!=='string')return false;
@@ -124,14 +127,19 @@ export default async function leaderboard(req){
       return json({saved:true});
     }
     if(data.action==='finish'){
-      const {score,seconds,runId}=data;
-      if(!isID(runId)||!Number.isInteger(score)||score<1||score>50000000||!Number.isFinite(seconds)||seconds<0||seconds>86400)return bad('Invalid score');
+      const {score,seconds,runId,bonusSeconds=0}=data;
+      if(!isID(runId)||!Number.isInteger(score)||score<1||score>50000000||!Number.isFinite(seconds)||seconds<0||seconds>86400||typeof bonusSeconds!=='number'||!Number.isFinite(bonusSeconds)||bonusSeconds<0||bonusSeconds>seconds+.03)return bad('Invalid score');
       const runKey='runs/'+runId,run=await store.get(runKey,{type:'json'});
       if(!run||run.used||run.id!==id)return bad('Run expired or already submitted',409);
       const reset=await store.get('resets/'+id,{type:'json'});
       if(reset && Number(reset.at)>=run.startedAt)return bad('This run belongs to a reset account',409);
-      const elapsed=(Date.now()-run.startedAt)/1000;
-      if(elapsed<0||elapsed>86400||seconds>elapsed+7||score>(elapsed+8)*145||Math.abs(score-Math.floor(seconds*145))>3)return bad('Score verification failed',422);
+      const now=Date.now(),elapsed=(now-run.startedAt)/1000;
+      // The server independently checks whether the run overlapped the limited-time
+      // event. Paused runs may earn less bonus time than the actual clock overlap.
+      const eventOverlap=Math.max(0,(Math.min(now,DOUBLE_END)-Math.max(run.startedAt,DOUBLE_START))/1000);
+      const permittedBonus=Math.min(seconds,eventOverlap+7);
+      const expectedScore=Math.floor((seconds+bonusSeconds)*145);
+      if(elapsed<0||elapsed>86400||seconds>elapsed+7||bonusSeconds>permittedBonus+.1||score>(elapsed+8+eventOverlap+7)*145||Math.abs(score-expectedScore)>3)return bad('Score verification failed',422);
       await store.setJSON(runKey,{...run,used:true});
       // Recheck right before writing, in case the player reset while a score was being verified.
       const latestReset=await store.get('resets/'+id,{type:'json'});
