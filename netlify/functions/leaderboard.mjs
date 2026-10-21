@@ -137,7 +137,7 @@ export default async function leaderboard(req){
       // The server independently checks whether the run overlapped the limited-time
       // event. Paused runs may earn less bonus time than the actual clock overlap.
       const eventOverlap=Math.max(0,(Math.min(now,DOUBLE_END)-Math.max(run.startedAt,DOUBLE_START))/1000);
-      const permittedBonus=Math.min(seconds,eventOverlap+7);
+      const permittedBonus=eventOverlap>0?Math.min(seconds,eventOverlap+7):0;
       const expectedScore=Math.floor((seconds+bonusSeconds)*145);
       if(elapsed<0||elapsed>86400||seconds>elapsed+7||bonusSeconds>permittedBonus+.1||score>(elapsed+8+eventOverlap+7)*145||Math.abs(score-expectedScore)>3)return bad('Score verification failed',422);
       await store.setJSON(runKey,{...run,used:true});
