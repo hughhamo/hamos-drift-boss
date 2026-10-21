@@ -1,5 +1,5 @@
 import { getStore } from '@netlify/blobs';
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, createHash } from 'node:crypto';
 
 const cleanName = v => String(v ?? '').trim().replace(/[^a-zA-Z0-9 _-]/g,'').replace(/\s+/g,' ').slice(0,18);
 const cleanFull = v => String(v ?? '').trim().replace(/[^a-zA-ZÀ-ž '\-]/g,'').replace(/\s+/g,' ').slice(0,48);
@@ -29,6 +29,21 @@ function publicDisplay(x){
 
 // Persistent, private player-ID bans; a browser-created ID is not a verified human identity.
 const banKey = id => 'bans/'+id;
+// Once a guest player ID has been linked to an optional cloud account,
+// only that owner's signed-in session may change its leaderboard record.
+async function canEditLinkedPlayer(req,id){
+ const cloud=getStore({name:'drift-boss-cloud-accounts-v1',consistency:'strong'});
+ const link=await cloud.get('linked/'+id,{type:'json'});
+ if(!link)return true;
+ const cookie=req.headers.get('cookie')||'';
+ const match=cookie.match(/(?:^|;\\s*)hamos_cloud_session=([a-f0-9]{64})/);
+ if(!match)return false;
+ const tokenHash=createHash('sha256').update(match[1]).digest('hex');
+ const session=await cloud.get('sessions/'+tokenHash,{type:'json'});
+ if(!session||session.expires<Date.now()||session.user!==link.username)return false;
+ const owner=await cloud.get('users/'+session.user,{type:'json'});
+ return !!owner&&owner.playerId===id;
+}
 const isBanned = async (store,id) => !!(await store.get(banKey(id),{type:'json'}));
 async function scores(store,includeBanned=false){
   let cursor,records=[];
@@ -108,6 +123,8 @@ export default async function leaderboard(req){
       return json({saved:true});
     }
     const id=data.playerId;
+    if(!isID(id))return bad('Invalid player ID');
+    if(!(await canEditLinkedPlayer(req,id)))return bad('Please sign in to your cloud account to use this leaderboard record',403);
     // Keep the old competition record out of the rankings before acknowledging a reset.
     // This separate deletion never modifies any other player's stored record.
     if(data.action==='delete'){
