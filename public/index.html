@@ -459,7 +459,7 @@ function addRoadRun(sx,sz,dir,length,width,style,startS,kind='road'){
 }
 function generateBranch(kind){
  const sx=gen.x,sz=gen.z,s0=gen.s,dir=gen.dir,other=dir==='z'?'x':'z';
- const lengthA=random(67,82),lengthB=random(42,51);
+ const lengthA=kind==='purple'?random(101,119):kind==='orange'?random(91,104):random(67,82),lengthB=kind==='purple'?random(62,73):random(42,51);
  const normalW=18.1,width=kind==='green'?35.0:kind==='orange'?23.5:kind==='purple'?22:18.5;
  // The usual neon path bends one way; the colorful alternative bends the opposite way.
  let m1=addRoadRun(sx,sz,dir,lengthA,normalW,'plain',s0);
@@ -476,8 +476,8 @@ function generateBranch(kind){
   addBranchCoins(sx,sz,other,lengthB,s0,kind);
   addBranchCoins(b1.x,b1.z,dir,lengthA,s0+lengthB,kind);
  }else{
-  const advance=lengthA*.46;
-  const loop={id:loops.length+1,kind:'orange',x:b1.x+(dir==='x'?advance:0),z:b1.z+(dir==='z'?advance:0),dir,radius:10.5,width:9.2,s:s0+lengthB+advance,theta:0,done:false,active:false,elapsed:0};
+  const advance=13;
+  const loop={id:loops.length+1,kind:'orange',x:b1.x+(dir==='x'?advance:0),z:b1.z+(dir==='z'?advance:0),dir,radius:8.2,travel:57,width:9.2,s:s0+lengthB+advance,theta:0,done:false,active:false,elapsed:0};
   loops.push(loop);
  }
  const r=kind==='green'?11.5:kind==='orange'?11.2:9.4;
@@ -1229,7 +1229,8 @@ function updateGreenStay(dt){
 
 // A vertical orange track ring with the car following its tangent.
 function loopPoint(l,theta,side=0,offset=0){
- const forward=l.radius*Math.sin(theta);
+ // A travelling coaster loop: the car keeps advancing instead of returning to its entry point.
+ const forward=l.radius*Math.sin(theta)+(l.travel||57)*theta/TAU;
  const y=l.radius*(1-Math.cos(theta))+offset;
  if(l.dir==='z')return {x:l.x+side,y,z:l.z+forward};
  return {x:l.x+forward,y,z:l.z+side};
@@ -1273,7 +1274,7 @@ function updateActiveLoop(dt){
   l.active=false;l.done=true;activeLoop=null;account.achievementCounts.loops++;saveAccount();
   player.loopPitch=0;player.y=0;
   // Exit gently on the same continuous branch after the full revolution.
-  if(l.dir==='z')player.z=l.z+2.8;else player.x=l.x+2.8;
+  if(l.dir==='z')player.z=l.z+(l.travel||57);else player.x=l.x+(l.travel||57);
   player.wasRight=l.dir==='x';
   collectCoin(15);loopBonusTime=1.65;screenShake=.16;
   sound(1100,.24,.06);
@@ -1319,9 +1320,10 @@ function update(dt){
  if(routeKind==='purple')speed*=1.5;
  if(player.boost>0){player.boost=Math.max(0,player.boost-dt*.9);speed*=1+.22*player.boost;}
  if(player.wasRight!==turnRight){
-   driftLeft=routeKind==='green'?2.44:1.22;screenShake=.08;player.wasRight=turnRight;playDriftSound();
+   if(routeKind!=='purple'){driftLeft=routeKind==='green'?2.44:1.22;screenShake=.08;playDriftSound();}
+   player.wasRight=turnRight;
  }
- driftLeft=Math.max(0,driftLeft-dt);
+ driftLeft=routeKind==='purple'?0:Math.max(0,driftLeft-dt);
  // Tyre grip is greatly reduced in the air and remains slippery during a drift.
  const inAir=player.airborne||player.fallingOff;
  const baseGrip=inAir?1.0:driftLeft>.38?(1.85+performanceTier*.43):(5.0+performanceTier*.78);
@@ -1329,9 +1331,10 @@ function update(dt){
  const k=1-Math.exp(-grip*dt);
  player.vx+=(target*speed-player.vx)*k;
  player.vz+=((1-target)*speed-player.vz)*k;
+ if(routeKind==='purple'){player.vx=target*speed;player.vz=(1-target)*speed;}
  const vl=Math.hypot(player.vx,player.vz)||1,scale=speed/vl;
  player.vx*=scale;player.vz*=scale;
- player.heading+=(target*PI/2-player.heading)*(1-Math.exp(-(inAir?7:18)*dt));
+ player.heading=routeKind==='purple'?target*PI/2:player.heading+(target*PI/2-player.heading)*(1-Math.exp(-(inAir?7:18)*dt));
  player.x+=player.vx*dt;player.z+=player.vz*dt;
  if(tryEnterLoop()){updateActiveLoop(dt);return;}
 
@@ -1401,7 +1404,7 @@ function update(dt){
  const slip=Math.sin(player.heading-travelAngle);
  const intensity=clamp(Math.abs(slip)*1.65,0,1);
  player.tilt+=(clamp(-slip*.32,-.30,.30)-player.tilt)*(1-Math.exp(-9*dt));
- if(intensity>.14&&!player.airborne&&!player.fallingOff&&![14,16].includes(account.smokeEquipped)){
+ if(routeKind!=='purple'&&intensity>.14&&!player.airborne&&!player.fallingOff&&![14,16].includes(account.smokeEquipped)){
    skidClock+=dt;
    if(skidClock>(account.smokeEquipped>=17?.095:account.smokeEquipped===15?.063:.028)){
      skidClock=0;
@@ -1494,10 +1497,13 @@ function drawSpecialRoadTint(){
  if(!visible)return;
  // Use a very slight neutral darkening so atmosphere palettes still show through.
  roadTintCtx.fillStyle='rgba(5,8,14,.145)';roadTintCtx.fill();
- // Purple turbo branch is differentiated by a translucent violet overlay.
- roadTintCtx.beginPath();let violet=false;
- for(const t of tiles){if(t.kind!=='branch-purple'||t.x0-camX>195||t.x1-camX< -195||t.z0-camZ>195||t.z1-camZ< -195)continue;violet=appendPolygon([vec(t.x0,.021,t.z0),vec(t.x1,.021,t.z0),vec(t.x1,.021,t.z1),vec(t.x0,.021,t.z1)],roadTintCtx)||violet;}
- if(violet){roadTintCtx.fillStyle='rgba(103,26,168,.40)';roadTintCtx.fill();}
+ // Each special road gets its own emissive asphalt colour, painted as one
+ // continuous mask per branch to keep corner seams invisible.
+ for(const [kind,tint] of [['red','rgba(179,20,70,.30)'],['green','rgba(15,146,83,.32)'],['orange','rgba(207,96,9,.32)'],['purple','rgba(103,26,168,.45)']]){
+  roadTintCtx.beginPath();let found=false;
+  for(const t of tiles){if(t.kind!=='branch-'+kind||t.x0-camX>195||t.x1-camX< -195||t.z0-camZ>195||t.z1-camZ< -195)continue;found=appendPolygon([vec(t.x0,.021,t.z0),vec(t.x1,.021,t.z0),vec(t.x1,.021,t.z1),vec(t.x0,.021,t.z1)],roadTintCtx)||found;}
+  if(found){roadTintCtx.fillStyle=tint;roadTintCtx.fill();}
+ }
  // Fade the shade out around each entry/exit. This changes only the tint mask,
  // not the original road surface or its differently coloured neon rails.
  roadTintCtx.globalCompositeOperation='destination-out';
@@ -1552,8 +1558,9 @@ function drawRoad(){
    const neon=kind==='red'?'#ff4779':kind==='green'?'#72ff8f':kind==='purple'?'#bb55ff':'#ff9a43';
    function edgeColour(p){if(!b)return neon;const dist=Math.min(Math.hypot(p.x-b.from.x,p.z-b.from.z),Math.hypot(p.x-b.to.x,p.z-b.to.z));const q=clamp(dist/22,0,1);return mixHex(base,neon,q*q*(3-2*q))}
    const cA=edgeColour(A),cB=edgeColour(B);
-   gradientSegment(A,B,cA+'45',cB+'45',7);
-   gradientSegment(A,B,cA,cB,2.65);
+   gradientSegment(A,B,cA+'17',cB+'17',22);
+   gradientSegment(A,B,cA+'51',cB+'51',10);
+   gradientSegment(A,B,cA,cB,3.2);
   }
 
  }
@@ -1604,6 +1611,9 @@ function drawLoops(){
    segment(piece.pa,piece.pd,'#ff8c2e',3.1);
    segment(piece.pb,piece.pc,'#ffad45',3.1);
    if(piece.i%4===0){
+    // Curved cross ties and suspended white supports read like coaster engineering.
+    const sup=loopPoint(l,(piece.a+piece.b)*.5,-l.width*.40);
+    if(sup.y>3)segment(sup,vec(sup.x,0,sup.z),'#aec3c98f',1.5);
     const p=loopPoint(l,(piece.a+piece.b)*.5,0,.13);
     const q=loopPoint(l,(piece.a+piece.b)*.5+TAU/N*.45,0,.13);
     segment(p,q,'#ffe7a0',2.1);
@@ -1642,15 +1652,26 @@ function drawCoins(){
  for(const c of coins){
   if(Math.abs(c.x-camX)>140||Math.abs(c.z-camZ)>140)continue;
   const large=c.value===5;
+  const pickupKind=selectedCar().type;
   const yy=(large?2.75:2.12)+Math.sin(time*4+c.phase)*.23;
   const p=project(vec(c.x,yy,c.z));if(!p||p.depth>220)continue;
   let r=clamp(camera.zoom/p.depth*(large?1.45:.87),2,large?49:36);
+  if(pickupKind==='tokyo'){
+   ctx.save();ctx.translate(p.x,p.y);ctx.rotate(time*1.1+c.phase);
+   ctx.shadowColor='#ff7dca';ctx.shadowBlur=10;
+   for(let j=0;j<5;j++){ctx.rotate(TAU/5);ctx.fillStyle=j%2?'#ffd2ed':'#ffa4d9';ctx.beginPath();ctx.ellipse(0,-r*.52,r*.33,r*.58,0,0,TAU);ctx.fill()}
+   ctx.fillStyle='#ffeb83';ctx.beginPath();ctx.arc(0,0,r*.18,0,TAU);ctx.fill();ctx.restore();continue;
+  }
+  if(pickupKind==='formula'){
+   ctx.save();ctx.shadowColor='#3bbdff';ctx.shadowBlur=12;ctx.fillStyle='#178fff';ctx.beginPath();ctx.arc(p.x,p.y,r*.8,0,TAU);ctx.fill();
+   ctx.fillStyle='#a8f8ff';ctx.beginPath();ctx.arc(p.x-r*.2,p.y-r*.22,r*.24,0,TAU);ctx.fill();ctx.restore();continue;
+  }
   const spin=.22+.78*Math.abs(Math.cos(time*3.0+c.phase)),rx=Math.max(1.3,r*spin);
   ctx.fillStyle=large?'#ff465950':'#ffd23a2e';ctx.beginPath();ctx.ellipse(p.x,p.y,rx+(large?10:5),r+(large?10:5),0,0,TAU);ctx.fill();
-  ctx.fillStyle=large?'#ff9452':'#b8c6db';ctx.beginPath();for(let n=0;n<12;n++){let a=n*TAU/12,rad=(n%2?r*.84:r)*spin;const x=p.x+Math.cos(a)*rad,y=p.y+Math.sin(a)*r*(n%2?.87:1);if(!n)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();ctx.fill();
-  ctx.fillStyle=large?'#fff4a4':'#60748c';ctx.beginPath();ctx.ellipse(p.x-rx*.12,p.y,rx*.48,r*.52,0,0,TAU);ctx.fill();
+  ctx.fillStyle=large?'#ff9452':'#ffd14a';ctx.beginPath();for(let n=0;n<12;n++){let a=n*TAU/12,rad=(n%2?r*.84:r)*spin;const x=p.x+Math.cos(a)*rad,y=p.y+Math.sin(a)*r*(n%2?.87:1);if(!n)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();ctx.fill();
+  ctx.fillStyle=large?'#fff4a4':'#ffed9a';ctx.beginPath();ctx.ellipse(p.x-rx*.12,p.y,rx*.48,r*.52,0,0,TAU);ctx.fill();
   ctx.strokeStyle='#fff9bd';ctx.lineWidth=Math.max(1,r*.12);ctx.beginPath();ctx.ellipse(p.x,p.y,rx*.73,r*.76,0,0,TAU);ctx.stroke();
-  if(spin>.45&&r>6){ctx.fillStyle='#985218';ctx.font='900 '+Math.round(r*(large?.95:.8))+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(large?'5':'⬡',p.x,p.y+1)}
+  if(spin>.45&&r>6){ctx.fillStyle='#985218';ctx.font='900 '+Math.round(r*(large?.95:.8))+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(large?'5':'★',p.x,p.y+1)}
  }
 }
 function local(x,y,z){
