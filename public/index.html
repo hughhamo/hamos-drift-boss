@@ -268,8 +268,8 @@ let account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],
 try{const a=JSON.parse(localStorage.getItem(DB_SAVE_KEY)||'{}');account={...account,...a};}catch(e){}
 account.wallet=Number.isFinite(+account.wallet)?Math.max(0,Math.floor(+account.wallet)):0;
 // Old achievement-theme indices 8 and 9 moved after the ten new base atmospheres.
-if(account.atmosEquipped===8||account.atmosEquipped===9)account.atmosEquipped+=10;
-if(Array.isArray(account.atmosOwned))account.atmosOwned=account.atmosOwned.map(i=>i===8||i===9?i+10:i);
+if(!account.worldMigrationV3){if(account.atmosEquipped===8||account.atmosEquipped===9)account.atmosEquipped+=10;
+if(Array.isArray(account.atmosOwned))account.atmosOwned=account.atmosOwned.map(i=>i===8||i===9?i+10:i);account.worldMigrationV3=true;}
 account.carOwned=Array.isArray(account.carOwned)?account.carOwned:[0];account.carOwned=Array.from(new Set([0,...account.carOwned.filter(i=>Number.isInteger(i)&&i>=0&&i<10)]));
 account.carEquipped=account.carOwned.includes(account.carEquipped)?account.carEquipped:0;
 for(const kind of ['smoke','atmos']){
@@ -664,6 +664,47 @@ async function finishCompetitionRun(finalScore,seconds){
 
 const modalWrap=$('modalWrap'),modalTitle=$('modalTitle'),modalContent=$('modalContent');
 const money=n=>Math.round(n).toLocaleString('en-IE');
+// Optional cloud sign-in. Guest profiles remain on the original localStorage key.
+let cloudLoggedIn=false,cloudUsername='',cloudSaveTimer=null,cloudSaveInFlight=false,cloudSavePending=false;
+async function cloudRequest(payload){
+ const r=await fetch('/api/account',payload?{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)}:{method:'GET',credentials:'same-origin'});
+ let data;try{data=await r.json()}catch(e){throw Error('Cloud service did not respond')}
+ if(!r.ok)throw Error(data.error||'Account service unavailable');
+ return data;
+}
+function applyCloudProfile(data){
+ if(!data?.loggedIn||!data.profile)return;
+ cloudLoggedIn=true;cloudUsername=data.username;
+ const p=data.profile;
+ account={...account,...p,worldMigrationV3:true,
+  smokeOwned:Array.from(new Set([0,...(p.smokeOwned||[])])),
+  atmosOwned:Array.from(new Set([0,...(p.atmosOwned||[])])),
+  carOwned:Array.from(new Set([0,...(p.carOwned||[])]))};
+ for(const kind of ['smoke','atmos','car'])if(!account[kind+'Owned'].includes(account[kind+'Equipped']))account[kind+'Equipped']=0;
+ if(data.playerId){competitionId=data.playerId;localStorage.setItem(COMPETITION_ID_KEY,competitionId)}
+ try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}
+ best=Math.max(best,account.verifiedBest||0);bestEl.textContent=String(best).padStart(6,'0');
+ updateCoinHud();resize();
+}
+function scheduleCloudSave(){
+ if(!cloudLoggedIn)return;
+ cloudSavePending=true;
+ if(cloudSaveTimer||cloudSaveInFlight)return;
+ cloudSaveTimer=setTimeout(async()=>{
+  cloudSaveTimer=null;if(!cloudLoggedIn)return;
+  cloudSavePending=false;cloudSaveInFlight=true;
+  try{await cloudRequest({action:'save',profile:account});}
+  catch(e){console.warn('Cloud sync pending',e);cloudSavePending=true}
+  finally{cloudSaveInFlight=false;if(cloudSavePending&&cloudLoggedIn&&!cloudSaveTimer){
+    cloudSaveTimer=setTimeout(()=>{cloudSaveTimer=null;scheduleCloudSave()},12000);
+  }}
+ },7000);
+}
+async function restoreCloudAccount(){
+ try{const data=await cloudRequest();if(data.loggedIn)applyCloudProfile(data);else{cloudLoggedIn=false;cloudUsername='';}}
+ catch(e){console.warn('Cloud account check unavailable',e)}
+ finally{showNewsletterOnce()}
+}
 const RELEASE_READ_KEY='hamos-mega-release-read-v1';
 let releasePromptOpen=false;
 function showNewsletterOnce(){
@@ -1828,7 +1869,7 @@ function drawGaragePreview(ts){
 }
 function frame(ts){if(!last)last=ts;let dt=Math.min(.05,(ts-last)/1000);last=ts;updateFxQuality(dt);updateScoreBonusBadge();
 if(state==='menu'){menuYaw=(menuYaw+dt*.58)%TAU;player.tilt=0;player.edgeRoll=0;player.edgePitch=0;player.loopPitch=0;player.y=0}accumulator=Math.min(.07,accumulator+dt);let n=0;while(accumulator>=FIX&&n<7){update(FIX);accumulator-=FIX;n++}render(dt);drawGaragePreview(ts);requestAnimationFrame(frame)}
-resize();initOnlineLeaderboard();prepareRoad();player={x:.8,z:10.8,y:0,vx:0,vz:0,vy:0,heading:.58,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};state='menu';shell.classList.add('menu');overlay.classList.add('intro');play.style.display='none';updateCoinHud();updateSpeedHud();requestAnimationFrame(frame);
+resize();initOnlineLeaderboard();restoreCloudAccount();prepareRoad();player={x:.8,z:10.8,y:0,vx:0,vz:0,vy:0,heading:.58,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};state='menu';shell.classList.add('menu');overlay.classList.add('intro');play.style.display='none';updateCoinHud();updateSpeedHud();requestAnimationFrame(frame);
 window.DriftBossDebug={
  start:restart,step:dt=>{for(let t=0;t<dt;t+=FIX)update(FIX)},steer:v=>{held=!!v},showMenu:showMainMenu,
  getState:()=>({state,score,best,time,carTier,car:carLabel(),speed:carSpeed(),coins:coinCount,position:{x:player.x,z:player.z,y:player.y},velocity:{x:player.vx,z:player.vz},fallingOff:player.fallingOff,airborne:player.airborne,contact:tyreSupport(player.x,player.z,player.heading),onRoad:onRoad(player.x,player.z),branches:branches.map(b=>b.kind)}),
