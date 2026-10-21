@@ -36,7 +36,7 @@ async function canEditLinkedPlayer(req,id){
  const link=await cloud.get('linked/'+id,{type:'json'});
  if(!link)return true;
  const cookie=req.headers.get('cookie')||'';
- const match=cookie.match(/(?:^|;\\s*)hamos_cloud_session=([a-f0-9]{64})/);
+ const match=cookie.match(/(?:^|;\s*)hamos_cloud_session=([a-f0-9]{64})/);
  if(!match)return false;
  const tokenHash=createHash('sha256').update(match[1]).digest('hex');
  const session=await cloud.get('sessions/'+tokenHash,{type:'json'});
