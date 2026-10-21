@@ -71,6 +71,75 @@ export default async function leaderboard(req){
     if(raw.length>2048)return bad('Too large',413);
     let data;try{data=JSON.parse(raw)}catch{return bad('Invalid JSON')}
     if(!data||typeof data!=='object')return bad('Invalid data');
+    // Global gamechat: public to read, verified-score gated to post.
+    // Server-side daily slots enforce a maximum of two messages per player per UTC day.
+    if(data.action==='chatList'||data.action==='chatPost'||data.action==='chatReport'){
+      const chatStore=getStore({name:'hamos-drift-boss-gamechat-v1',consistency:'strong'});
+      const feedKey='feed/recent';
+      const fetchFeed=async()=>{
+        const list=await chatStore.get(feedKey,{type:'json'});
+        return Array.isArray(list)?list.filter(m=>m&&typeof m.text==='string'&&m.id).slice(-70):[];
+      };
+      if(data.action==='chatList'){
+        const feed=await fetchFeed();
+        let remaining=null;
+        if(isID(data.playerId)){
+          const day=new Date().toISOString().slice(0,10);
+          const quota=await chatStore.get('quota/'+day+'/'+data.playerId,{type:'json'});
+          remaining=Math.max(0,2-Math.min(2,Math.max(0,Number(quota?.used)||0)));
+        }
+        return json({messages:feed.slice(-50).map(({id,name,text,at})=>({id,name,text,at})),limitPerDay:2,maxWords:10,unlockScore:20000,remaining});
+      }
+      const id=data.playerId;
+      if(!isID(id)||!(await canEditLinkedPlayer(req,id)))return bad('Sign in to your linked account to post',403);
+      const player=await store.get('scores/'+id,{type:'json'});
+      if(!player||player.bannedAt||(await isBanned(store,id)))return bad('A valid leaderboard record is required',403);
+      const day=new Date().toISOString().slice(0,10);
+      if(data.action==='chatReport'){
+        const messageId=String(data.messageId||'');
+        const feed=await fetchFeed(),message=feed.find(m=>m.id===messageId);
+        if(!message)return bad('Chat message not found',404);
+        const reportKey='reports/'+day+'/'+id+'/'+messageId.replace(/[^a-zA-Z0-9_-]/g,'').slice(0,72);
+        if(await chatStore.get(reportKey,{type:'json'}))return json({reported:true});
+        await chatStore.setJSON(reportKey,{messageId,reporter:id,at:Date.now()});
+        const countKey='reports/count/'+messageId.replace(/[^a-zA-Z0-9_-]/g,'');
+        const old=await chatStore.get(countKey,{type:'json'});
+        const reports=Math.min(50,(Number(old?.reports)||0)+1);
+        await chatStore.setJSON(countKey,{reports});
+        if(reports>=2){
+          await chatStore.setJSON(feedKey,feed.map(item=>item.id===messageId?{...item,text:'[Message hidden after community reports]'}:item));
+        }
+        return json({reported:true});
+      }
+      if(player.score<=20000)return bad('Gamechat unlocks once your verified best score exceeds 20,000 points',403);
+      const message=String(data.message||'').trim().replace(/\s+/g,' ');
+      const words=message.split(' ').filter(Boolean);
+      if(message.length<1||message.length>160||words.length>10)return bad('Send 1–10 words (160 characters maximum)');
+      // Prevent sharing contact details, links, social handles or obvious abusive language.
+      if(/(?:https?:\/\/|www\.|\S+@\S+|@\w+|\b\d[\d() .-]{6,}\d\b)/i.test(message))
+        return bad('Links, handles and contact details are not allowed');
+      if(/\b(?:fuck|shit|bitch|cunt|nigg\w*|fagg\w*|retard\w*|kill yourself|kys)\b/i.test(message))
+        return bad('Please keep gamechat respectful');
+      if(/[<>]/.test(message))return bad('HTML markup is not allowed');
+      const quotaKey='quota/'+day+'/'+id;
+      const current=await chatStore.get(quotaKey,{type:'json'});
+      const used=Math.min(2,Math.max(0,Number(current?.used)||0));
+      if(used>=2)return bad('You have used both messages for today',429);
+      const feed=await fetchFeed();
+      if(feed.some(m=>m.playerId===id&&m.text.toLowerCase()===message.toLowerCase()&&m.at.slice(0,10)===day))
+        return bad('You have already posted this message today',409);
+      const at=new Date().toISOString(),post={id:crypto.randomUUID(),playerId:id,name:cleanName(player.name),text:message,at};
+      // Slot keys also cap per-day writes independently of the rolling message feed.
+      const slotBase='slots/'+day+'/'+id+'/';
+      const occupied1=await chatStore.get(slotBase+'1',{type:'json'});
+      const occupied2=await chatStore.get(slotBase+'2',{type:'json'});
+      const slot=!occupied1?1:!occupied2?2:0;
+      if(!slot)return bad('You have used both messages for today',429);
+      await chatStore.setJSON(slotBase+slot,post);
+      await chatStore.setJSON(quotaKey,{used:Math.max(used,slot),lastAt:at});
+      await chatStore.setJSON(feedKey,[...feed,post].slice(-70));
+      return json({posted:true,remaining:Math.max(0,2-slot),message:{id:post.id,name:post.name,text:post.text,at}});
+    }
     // Administrative corrections require a private key held ONLY in Netlify's environment.
     // The discoverable shortcut key '9' is never sufficient authorization.
     if(['adminList','adminEdit','adminClear','adminBan','adminUnban'].includes(data.action)){
