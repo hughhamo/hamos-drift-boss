@@ -954,9 +954,14 @@ function renderProfile(){
   $('cloudSyncNow').addEventListener('click',async()=>{feedback.textContent='Saving…';try{await cloudRequest({action:'save',profile:account});feedback.textContent='✓ Cloud save completed.'}catch(e){feedback.textContent=e.message}});
   $('cloudSignOut').addEventListener('click',async()=>{if(modalWasPlaying){feedback.textContent='Finish the run before switching accounts.';return}feedback.textContent='Saving and signing out…';try{
    if(cloudSavePending)await flushCloudSave();
+   const signedOutPlayerId=competitionId;
    await cloudRequest({action:'logout'});
    cloudLoggedIn=false;cloudUsername='';if(cloudSaveTimer)clearTimeout(cloudSaveTimer);cloudSaveTimer=null;cloudSavePending=false;
-   restoreGuestProfile();renderProfile();
+   restoreGuestProfile();
+   // Newly registered players keep their leaderboard ID with their cloud identity.
+   // Guest mode must use a fresh ID rather than reuse a password-protected one.
+   if(competitionId===signedOutPlayerId){competitionId=createCompetitionId();try{localStorage.setItem(COMPETITION_ID_KEY,competitionId)}catch(e){}}
+   renderProfile();
   }catch(e){feedback.textContent=e.message}});
  }else{
   const signIn=async action=>{
