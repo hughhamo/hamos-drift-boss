@@ -969,7 +969,7 @@ function checkNewAchievements(){
  }
 }
 function renderAchievements(){
- const icons=['🛞','🏎️','🌑','🪙','🔥','🎵','💰','🌃','🎣','💎','🕳️','👑','🎢','🍌','🥤','💸'];
+ const icons=['🛞','🏎️','🪙','🪙','🔥','🎵','💰','🪙','🎣','💎','🕳️','👑','🎢','🍌','🥤','💸'];
  const colors=['#bd996c','#ff5263','#818aa8','#ffcd58','#ff7a39','#b281ff','#65e8ae','#fc65df','#6fd9ff','#70efbd','#9373cf','#ffd77a','#ffd655','#ffe251','#68e6ff','#4aea86'];
  const unlocked=account.achievementClaims.length;
  modalContent.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:13px"><div><div style="font-weight:950;font-size:20px">THE ACHIEVEMENT VAULT</div><p class="tierSub">Hit milestones. Unlock exclusive trails, atmospheric worlds and coin prizes.</p></div><div class="walletBar">✦ '+unlocked+'/'+ACH.length+' CLAIMED · '+money(account.wallet)+' COINS</div></div>'
