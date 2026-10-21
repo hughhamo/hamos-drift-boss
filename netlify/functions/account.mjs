@@ -93,10 +93,10 @@ export default async function accountFunction(req){
    await store.delete('sessions/'+active.key);
    return json({loggedIn:false},200,cookieFor('',0));
   }
-  if(action==='save'){
+  if(action==='save'||action==='reset'){
    // Only the authenticated user's document may be modified; never take a user ID from the body.
    const profile=cleanProfile(data.profile);
-   const merged={...active.user,profile:{...profile,verifiedBest:Math.max(profile.verifiedBest,active.user.profile.verifiedBest)}};
+   const merged={...active.user,profile:action==='reset'?profile:{...profile,verifiedBest:Math.max(profile.verifiedBest,active.user.profile.verifiedBest)}};
    await store.setJSON('users/'+active.user.username,merged);
    return json({saved:true});
   }
