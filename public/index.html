@@ -686,6 +686,16 @@ function applyCloudProfile(data){
  best=Math.max(best,account.verifiedBest||0);bestEl.textContent=String(best).padStart(6,'0');
  updateCoinHud();resize();
 }
+async function flushCloudSave(){
+ if(!cloudLoggedIn)return;
+ cloudSavePending=true;
+ if(cloudSaveInFlight)return;
+ if(cloudSaveTimer)clearTimeout(cloudSaveTimer);
+ cloudSaveTimer=null;cloudSavePending=false;cloudSaveInFlight=true;
+ try{await cloudRequest({action:'save',profile:account})}
+ catch(e){console.warn('Cloud sync failed',e);cloudSavePending=true}
+ finally{cloudSaveInFlight=false;if(cloudSavePending)scheduleCloudSave()}
+}
 function scheduleCloudSave(){
  if(!cloudLoggedIn)return;
  cloudSavePending=true;
@@ -726,6 +736,7 @@ function openModal(page){
  if(page==='board')loadBoard();
 }
 function closeModal(){
+ if(cloudLoggedIn&&cloudSavePending)flushCloudSave();
  previewSmokeIndex=null;previewAtmosIndex=null;resize();
  modalWrap.classList.remove('open');
  if(modalWasPlaying&&state==='paused')resume();modalWasPlaying=false;
@@ -995,7 +1006,7 @@ function endGame(){
  player.fallRollVel-=(player.fallSideX||.2)*1.35;
  player.fallPitchVel+=(player.fallSideZ||.25)*.75;
  sound(125,.37,.08);updateBest(true);finishCompetitionRun(score,time);
- if(cloudLoggedIn)cloudRequest({action:'save',profile:account}).catch(e=>console.warn('End-of-run cloud backup failed',e));
+ if(cloudLoggedIn)flushCloudSave();
 }
 function updateBest(save=false){checkNewAchievements();
  if(score>best){best=score;bestEl.textContent=String(best).padStart(6,'0')}
@@ -1072,7 +1083,7 @@ function unlockEverythingWithP(){
 }
 function keydown(e){if(releasePromptOpen){if(e.code==='Space'||e.code==='Enter'||e.code==='ArrowRight')e.stopPropagation();return}if(e.code==='KeyR'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();if(e.repeat)return;if(resetPending){confirmAccountReset()}else showResetWarning();return}if(resetPending||resetBusy)return;if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='KeyP'){e.preventDefault();if(!e.repeat)unlockEverythingWithP();return}if(e.code==='Digit9'||e.code==='Numpad9'){e.preventDefault();if(e.repeat)return;garageFree=!garageFree;if(modalWrap.classList.contains('open'))renderModal();if(garageFree&&state==='menu')openAdminPanel();return}if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();if(e.repeat)return;if(state==='menu'||state==='dead'||state==='finished'){restart();return}else if(state==='paused')resume();held=true}else if(e.code==='Escape'){if(state==='playing')displayOverlay('paused');else if(state==='paused')resume()}}
 function keyup(e){if(resetPending||resetBusy||modalWrap.classList.contains('open'))return;if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();held=false}}
-addEventListener('keydown',keydown);addEventListener('keyup',keyup);addEventListener('blur',()=>{held=false;touchHeld=false;if(state==='playing')displayOverlay('paused')});
+addEventListener('keydown',keydown);addEventListener('keyup',keyup);addEventListener('visibilitychange',()=>{if(document.hidden&&cloudLoggedIn&&cloudSavePending)flushCloudSave()});addEventListener('blur',()=>{held=false;touchHeld=false;if(state==='playing')displayOverlay('paused')});
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();if(releasePromptOpen)return;if(state='menu'){if(isCarHit(e.clientX,e.clientY)){openModal('profile');return}restart();return}else if(state==='dead'||state==='finished')restart();else if(state==='paused')resume();touchHeld=true});addEventListener('pointerup',()=>touchHeld=false);addEventListener('pointercancel',()=>touchHeld=false);
 soundBtn.addEventListener('click',()=>{soundEnabled=!soundEnabled;soundBtn.textContent=soundEnabled?'🔊':'🔇';if(soundEnabled)sound(630,.06,.022);});
 function ensureAudio(){
