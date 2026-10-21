@@ -60,7 +60,7 @@ h1{margin:0;font-size:clamp(46px,7vw,70px);line-height:.92;letter-spacing:-.065e
 #garageLaunch button:hover,.menuTools button:hover{border-color:#91fff2;background:#224268}
 #shell.menu #garageLaunch{display:none}
 #shell:not(.menu) .menuTools,#shell:not(.menu) #menuCarHint{display:none!important}
-.menuTools{position:absolute;inset:0;z-index:12;pointer-events:none}.menuTools button{position:absolute;pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:124px;height:124px;border-radius:50%;font-size:36px;background:radial-gradient(circle at 30% 30%,#20395ebd,#07131fe8 70%);backdrop-filter:blur(8px);box-shadow:0 0 28px #0009,0 0 22px #3dd8ff2a;border:1px solid #90ddff55}.menuTools button span{font-size:11px;letter-spacing:.18em;font-weight:900}.menuTools button:hover{transform:scale(1.04)}#openShopMenu{left:28px;top:50%;transform:translateY(-50%)}#openAchievementsMenu{left:38px;top:72%;width:102px;height:102px;font-size:29px}#openAchievementsMenu span{font-size:9px}#openBoardMenu{right:28px;top:50%;transform:translateY(-50%)}#openProfileMenu{display:none}.menuTools button:hover{border-color:#b2ffff;background:radial-gradient(circle at 30% 30%,#274675e0,#0a1727f0 70%)}#openShopMenu:hover,#openBoardMenu:hover{transform:translateY(-50%) scale(1.05)}#menuCarHint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:12;color:#d7ebf8;font-size:12px;letter-spacing:.22em;font-weight:900;text-shadow:0 0 14px #000;pointer-events:none}
+.menuTools{position:absolute;inset:0;z-index:12;pointer-events:none}.menuTools button{position:absolute;pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:124px;height:124px;border-radius:50%;font-size:36px;background:radial-gradient(circle at 30% 30%,#20395ebd,#07131fe8 70%);backdrop-filter:blur(8px);box-shadow:0 0 28px #0009,0 0 22px #3dd8ff2a;border:1px solid #90ddff55}.menuTools button span{font-size:11px;letter-spacing:.18em;font-weight:900}.menuTools button:hover{transform:scale(1.04)}#openShopMenu{left:28px;top:50%;transform:translateY(-50%)}#openAchievementsMenu{left:38px;top:72%;width:102px;height:102px;font-size:29px}#openAchievementsMenu span{font-size:9px}#openBoardMenu{right:28px;top:50%;transform:translateY(-50%)}#openChatMenu{right:36px;top:27%;width:105px;height:105px;font-size:29px}#openChatMenu span{font-size:9px}#openProfileMenu{display:none}.menuTools button:hover{border-color:#b2ffff;background:radial-gradient(circle at 30% 30%,#274675e0,#0a1727f0 70%)}#openShopMenu:hover,#openBoardMenu:hover{transform:translateY(-50%) scale(1.05)}#menuCarHint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:12;color:#d7ebf8;font-size:12px;letter-spacing:.22em;font-weight:900;text-shadow:0 0 14px #000;pointer-events:none}
 #modalWrap{position:fixed;inset:0;z-index:35;background:rgba(1,8,22,.86);backdrop-filter:blur(13px);display:none;align-items:center;justify-content:center;padding:20px;touch-action:pan-y}
 #modalWrap.open{display:flex}
 #modalWindow{width:min(760px,100%);max-height:min(780px,90vh);display:flex;flex-direction:column;background:linear-gradient(145deg,#172d4a,#0c142c 62%,#16133c);border:1px solid #79cffb77;border-radius:22px;box-shadow:0 25px 90px #000c;overflow:hidden}
@@ -77,7 +77,7 @@ h1{margin:0;font-size:clamp(46px,7vw,70px);line-height:.92;letter-spacing:-.065e
 .primaryMini{padding:12px 15px;background:#7cefc5;color:#092c2b;border:0;border-radius:10px;font-weight:950;cursor:pointer;margin-left:7px}
 #profileNote,#leaderboardNote{font-size:12px;color:#a4cde2;margin-top:11px;line-height:1.5}
 .leaderRow{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:8px;padding:11px;border-bottom:1px solid #b9dffe24;font-size:13px}.leaderRow strong{color:#fff0a6;font-variant-numeric:tabular-nums}.leaderRow .rank{color:#8edbeb;font-weight:1000}.leaderRow.self{background:#20545a55}
-@media(max-width:620px){.menuTools button{width:92px;height:92px;font-size:26px}#openShopMenu{left:10px}#openBoardMenu{right:10px}#menuCarHint{font-size:10px;bottom:8px}#speedCorner{right:9px;bottom:8px;padding:8px 10px}#speed{font-size:23px}#modalWrap{padding:8px}#modalWindow{max-height:95vh}#modalContent{padding:12px}.tierGrid{grid-template-columns:1fr}.modalHead{padding:12px 15px}.modalHead strong{font-size:15px}}
+@media(max-width:620px){.menuTools button{width:92px;height:92px;font-size:26px}#openShopMenu{left:10px}#openBoardMenu{right:10px}#openChatMenu{right:9px;top:27%;width:88px;height:88px;font-size:24px}#menuCarHint{font-size:10px;bottom:8px}#speedCorner{right:9px;bottom:8px;padding:8px 10px}#speed{font-size:23px}#modalWrap{padding:8px}#modalWindow{max-height:95vh}#modalContent{padding:12px}.tierGrid{grid-template-columns:1fr}.modalHead{padding:12px 15px}.modalHead strong{font-size:15px}}
 #onlineIntro{margin:8px 0 12px;color:#8ffff4;font-size:11px;font-weight:900;letter-spacing:.15em;text-shadow:0 0 14px #35ffd557}#onlineIntro small{display:block;margin-top:7px;color:#d7eaf4;font-size:9px;letter-spacing:.11em;line-height:1.4}#overlay:not(.intro) #onlineIntro{display:none}
 #leaderboardNote{margin-bottom:12px}.leaderRow:nth-child(1){border:1px solid #ffecab55;border-radius:10px;background:#9c783926}.leaderRow:nth-child(2){background:#c8e5f111}.leaderRow:nth-child(3){background:#a8765114}
 @media(max-width:620px){#onlineIntro{font-size:9px;margin:5px 0 6px}#onlineIntro small{font-size:8px}}
@@ -156,6 +156,17 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 .releaseCard label input{width:20px;height:20px;accent-color:#89f9c8}
 .releaseCard button{font:900 13px system-ui;background:#e9e5ff;color:#142039;border-radius:11px;padding:11px 15px;border:0;cursor:pointer}
 .releaseCard button:disabled{opacity:.35;cursor:not-allowed}
+.chatFeed{display:flex;flex-direction:column;gap:9px;max-height:330px;overflow-y:auto;padding:10px;background:#08172a;border:1px solid #72d9f741;border-radius:12px}
+.chatEntry{background:#122844;border:1px solid #5ca9c635;border-radius:9px;padding:10px 12px}
+.chatEntry strong{color:#7cefff;font-size:12px;letter-spacing:.04em}
+.chatEntry time{color:#90a9be;font-size:10px;margin-left:9px}
+.chatEntry p{margin:7px 0 0;color:#f0f9ff;font-size:14px;overflow-wrap:anywhere}
+.chatCompose{margin-top:14px;display:grid;gap:10px}
+.chatCompose textarea{width:100%;min-height:76px;background:#07192e;color:#fff;border:1px solid #6bd9fa;border-radius:10px;padding:12px;font:13px system-ui;resize:vertical;user-select:text;touch-action:auto}
+.chatCompose button,.chatControl{background:#8fe8ff;color:#0a2137;border:0;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer}
+.chatCompose button:disabled{opacity:.5;cursor:not-allowed}
+.chatHint{color:#b3cbe0;font-size:12px;line-height:1.55}
+.chatReport{float:right;font-size:10px;border:1px solid #5d86a5;border-radius:7px;padding:4px;background:#1b334a;color:#d7edfa;cursor:pointer}
 .cloudStatus{color:#a6eaff;font-size:12px;margin:10px 0}.cloudForm{display:grid;gap:9px;grid-template-columns:1fr 1fr;margin:12px 0}.cloudForm input{min-width:0;background:#06182d;border:1px solid #82a6c567;color:#fff;border-radius:9px;padding:11px}
 .cloudForm button{grid-column:1/-1;background:#8effd7;color:#061725;border:0;border-radius:9px;padding:12px;font-weight:950;cursor:pointer}
 @media(max-width:500px){.cloudForm{grid-template-columns:1fr}}
@@ -174,20 +185,27 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 <div id="overlay" class="intro"><div class="panel"><div id="kicker" class="kicker">STARTING CAR · STREET HATCH</div><h1 id="headline"><span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em></h1><div id="message">PRESS SPACE TO PLAY</div><div id="deathTopTen"></div><div id="onlineIntro">◈ <span id="onlineLinkStatus">CONNECTING LEADERBOARD…</span><small>CLICK THE CAR TO CHOOSE A NICKNAME &amp; COMPETE</small></div><div class="instruction"><span class="key">SPACE</span><span><b>HOLD</b> → drive diagonally right<br><b>RELEASE</b> → drive diagonally left</span></div><button class="cta" id="play">START DRIVING →</button><button id="backToModes" type="button">HOME</button><div class="hint">Tap or click to play on mobile</div></div></div>
 
 <div id="garageLaunch"></div>
-<div class="menuTools"><button id="openShopMenu" type="button">🛠<span>GARAGE</span></button><button id="openAchievementsMenu" type="button">✦<span>ACHIEVEMENTS</span></button><button id="openBoardMenu" type="button">🏆<span>LEADERBOARD</span></button><button id="openProfileMenu" type="button">☁ SAVE / LOGIN</button></div><div id="menuCarHint">CLICK THE CAR TO SAVE YOUR PROGRESS OR CHOOSE A NAME</div>
+<div class="menuTools"><button id="openShopMenu" type="button">🛠<span>GARAGE</span></button><button id="openAchievementsMenu" type="button">✦<span>ACHIEVEMENTS</span></button><button id="openChatMenu" type="button">💬<span>GAMECHAT</span></button><button id="openBoardMenu" type="button">🏆<span>LEADERBOARD</span></button><button id="openProfileMenu" type="button">☁ SAVE / LOGIN</button></div><div id="menuCarHint">CLICK THE CAR TO SAVE YOUR PROGRESS OR CHOOSE A NAME</div>
 <div id="releaseNotes" hidden role="dialog" aria-modal="true" aria-labelledby="releaseHeading"><section class="releaseCard">
- <div style="color:#ffc970;font-weight:1000;letter-spacing:.17em">HAMOS DRIFT BOSS · HUGE NEW UPDATE</div>
- <h2 id="releaseHeading">THE GARAGE<br><span style="color:#8de8ff">REVOLUTION</span> 🏁</h2>
+ <div style="color:#ffc970;font-weight:1000;letter-spacing:.17em">HAMOS DRIFT BOSS · MOTORSPORT UPDATE 2.0</div>
+ <h2 id="releaseHeading">RACING<br><span style="color:#8de8ff">EVOLUTION</span> 🏁</h2>
  <p style="font-weight:900;color:#fff0b3">🚀 SHARE THE GAME WITH YOUR FRIENDS! Every racer matters — send <a style="color:#8fffea" href="https://hamosdriftboss.netlify.app">hamosdriftboss.netlify.app</a> to your group chats and compete for the worldwide top ten.</p>
  <button id="releaseCopy" type="button">📋 COPY GAME LINK</button>
- <ul><li>🏎️ 10 garage cars, from a free hatchback to the Dublin Bus 44, Tokyo Drift and Lamborghini Drift King</li>
- <li>🌌 All atmospheres FREE, plus 10 new colour worlds</li>
- <li>🔩 Nuts & bolts upgrade your engine, while wallet coins buy your cars and drift styles</li>
- <li>💜 PURPLE TURBO ROAD: +50% speed and 15 bonus bolts</li>
- <li>🏆 Top ten revealed after every run — fight for the rainbow podium!</li>
- <li>🔐 Optional username/password cloud accounts to protect your progress</li>
- <li>💨 Original drifts preserved, with permanent garage discounts</li>
- <li>⚡ 48-hour DOUBLE SCORE launch event, ending automatically</li></ul>
+ <ul>
+ <li>🏎️ Garage refresh: Rally Beast, flashing Police Pursuit, Monster Wheels, F1 and twin blue companion racer replace old models</li>
+ <li>🚌 Improved longer Dublin Bus 44, solid Midnight Phantom and futuristic black Lamborghini</li>
+ <li>🌸 Tokyo Drift has pink cherry-blossom pickups; the F1 has blue energy orbs; others have spinning gold coins</li>
+ <li>🪙 Engine upgrades trigger an arcade coin-blaster celebration above the car</li>
+ <li>🎮 Each car remembers its own equipped drift; animated drift previews have been removed</li>
+ <li>⚡ Banana, slushie and money trails use fewer particles for smoother performance</li>
+ <li>🌈 All coloured special roads now glow with powerful neon auras</li>
+ <li>💜 Purple Turbo is longer and offers instant pinpoint steering with no sliding drift</li>
+ <li>🎢 Orange coaster loops travel forwards through a huge arch instead of returning to the entry point</li>
+ <li>💰 Dark Mode / Tokyo atmosphere achievement rewards are now 20,000 and 200,000 Garage coins</li>
+ <li>✍️ Choose a public racing nickname before your first run so your high score can be submitted</li>
+ <li>💬 New global gamechat: verified score above 20K required to post, 2 chats per day, 10 words per chat</li>
+ <li>🏆 Leaderboards and optional cloud saves remain available. Existing wallet, cars and records are preserved</li>
+ </ul>
  <label><input type="checkbox" id="releaseRead">I have read the update notes.</label>
  <button id="releaseConfirm" type="button" disabled style="width:100%">CONFIRM & START RACING →</button>
  </section></div>
@@ -763,7 +781,7 @@ function openModal(page){
  modalPage=page;modalWasPlaying=state==='playing';
  if(modalWasPlaying)displayOverlay('paused');
  modalWrap.classList.add('open');renderModal();
- if(page==='board')loadBoard();
+ if(page==='board')loadBoard();if(page==='chat')loadChat();
 }
 function closeModal(){
  if(cloudLoggedIn&&cloudSavePending)flushCloudSave();
@@ -773,7 +791,7 @@ function closeModal(){
 }
 $('modalClose').addEventListener('click',closeModal);
 modalWrap.addEventListener('pointerdown',e=>{if(e.target===modalWrap)closeModal()});
-for(const pair of [['openShopMenu','shop'],['openBoardMenu','board'],['openAchievementsMenu','achievements'],['openProfileMenu','profile']]){const el=$(pair[0]);if(el)el.addEventListener('click',()=>openModal(pair[1]))}
+for(const pair of [['openShopMenu','shop'],['openBoardMenu','board'],['openChatMenu','chat'],['openAchievementsMenu','achievements'],['openProfileMenu','profile']]){const el=$(pair[0]);if(el)el.addEventListener('click',()=>openModal(pair[1]))}
 
 let moderatorKey='',moderatorRows=[],moderatorError='';
 function openAdminPanel(){
@@ -850,9 +868,62 @@ function renderAdmin(){
   }catch(e){moderatorError=e.message;renderAdmin()}
  };
 }
+let gamechatMessages=[],gamechatStatus='Loading worldwide chat…',gamechatRemaining=null,gamechatBusy=false;
+function renderChat(){
+ modalContent.innerHTML='<p class="chatHint">🏁 Public messages for racers worldwide. Reading is free. To post, your <b>verified leaderboard best must be above 20,000 points</b>. Only 2 messages per UTC day, up to 10 words each. Do not share names, contact details or links.</p>'+
+ '<p id="chatStatus" class="chatHint" role="status"></p><div class="chatFeed" id="chatFeed"></div>'+
+ '<div class="chatCompose" id="chatCompose"><textarea id="chatInput" maxlength="160" placeholder="Cheer on other racers… 10 words maximum"></textarea><div class="chatHint"><span id="chatWords">0 / 10 words</span> · <span id="chatRemaining"></span></div><button id="chatSend" type="button">POST MESSAGE</button></div>'+
+ '<button class="chatControl" type="button" id="chatRefresh" style="margin-top:12px">↻ REFRESH CHAT</button>';
+ const eligible=account.verifiedBest>20000;
+ $('chatCompose').hidden=!eligible;
+ $('chatStatus').textContent=gamechatStatus;
+ $('chatRemaining').textContent=gamechatRemaining===null?'Daily limit: 2 messages':gamechatRemaining+' message(s) left today';
+ const feed=$('chatFeed');feed.textContent='';
+ if(!gamechatMessages.length){const none=document.createElement('p');none.className='chatHint';none.textContent='No messages yet — be the first to post!';feed.appendChild(none);}
+ for(const m of gamechatMessages){
+  const item=document.createElement('div');item.className='chatEntry';
+  const author=document.createElement('strong');author.textContent=m.name;item.appendChild(author);
+  const date=document.createElement('time');date.textContent=new Date(m.at).toLocaleString();item.appendChild(date);
+  const body=document.createElement('p');body.textContent=m.text;item.appendChild(body);
+  const report=document.createElement('button');report.type='button';report.className='chatReport';report.textContent='REPORT';report.setAttribute('aria-label','Report this message');
+  report.addEventListener('click',async()=>{
+   report.disabled=true;try{await competitionRequest({action:'chatReport',playerId:competitionId,messageId:m.id});report.textContent='REPORTED';}
+   catch(e){report.textContent=e.message||'FAILED';report.disabled=false;}
+  });
+  item.appendChild(report);feed.appendChild(item);
+ }
+ $('chatRefresh').addEventListener('click',loadChat);
+ if(eligible){
+  const input=$('chatInput'),submit=$('chatSend');
+  function updateWords(){const n=input.value.trim().split(/\s+/).filter(Boolean).length;$('chatWords').textContent=n+' / 10 words';submit.disabled=gamechatBusy||n===0||n>10||gamechatRemaining===0}
+  input.addEventListener('input',updateWords);updateWords();
+  submit.addEventListener('click',async()=>{
+   if(gamechatBusy)return;
+   const value=input.value.trim().replace(/\s+/g,' ');
+   if(!value||value.split(' ').length>10)return;
+   gamechatBusy=true;submit.disabled=true;gamechatStatus='Posting…';$('chatStatus').textContent=gamechatStatus;
+   try{
+    const sent=await competitionRequest({action:'chatPost',playerId:competitionId,message:value});
+    gamechatRemaining=sent.remaining;gamechatStatus='✓ Message posted.';await loadChat();
+   }catch(e){gamechatStatus=e.message||'Could not post';$('chatStatus').textContent=gamechatStatus;}
+   finally{gamechatBusy=false;if(modalPage==='chat'&&modalWrap.classList.contains('open')){if($('chatSend'))$('chatSend').disabled=gamechatRemaining===0;}}
+  });
+ }
+}
+async function loadChat(){
+ gamechatStatus='Refreshing global gamechat…';
+ try{
+  const data=await competitionRequest({action:'chatList',playerId:competitionId});
+  gamechatMessages=Array.isArray(data.messages)?data.messages:[];
+  gamechatRemaining=Number.isInteger(data.remaining)?data.remaining:null;
+  gamechatStatus=gamechatMessages.length?'Messages are public · Please be respectful.':'No messages yet.';
+ }catch(e){gamechatStatus=e.message||'Chat is temporarily unavailable.';}
+ if(modalPage==='chat'&&modalWrap.classList.contains('open'))renderChat();
+}
 function renderModal(){
- const titles={shop:'CUSTOM GARAGE',board:'ALL-TIME HIGH SCORES',profile:'YOUR PLAYER PROFILE',achievements:'ACHIEVEMENTS',admin:'PLAYER MODERATION · BAN CONTROLS'};
+ const titles={shop:'CUSTOM GARAGE',board:'ALL-TIME HIGH SCORES',chat:'GLOBAL GAMECHAT',profile:'YOUR PLAYER PROFILE',achievements:'ACHIEVEMENTS',admin:'PLAYER MODERATION · BAN CONTROLS'};
  modalTitle.textContent=titles[modalPage];
+ if(modalPage==='chat')renderChat();
  if(modalPage==='shop')renderShop();
  if(modalPage==='profile')renderProfile();
  if(modalPage==='board')renderBoard();if(modalPage==='achievements')renderAchievements();if(modalPage==='admin')renderAdmin();
