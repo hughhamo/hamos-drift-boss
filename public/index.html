@@ -200,19 +200,23 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d',{alpha:false});
 const $=id=>document.getElementById(id),shell=$('shell'),backToModes=$('backToModes'),scoreEl=$('score'),bestEl=$('best'),speedEl=$('speed'),driftEl=$('drift'),bar=$('bar'),barInner=$('barInner'),level=$('level'),overlay=$('overlay'),headline=$('headline'),kicker=$('kicker'),message=$('message'),play=$('play'),soundBtn=$('sound'),coinProgressEl=$('coinProgress'),coinTotalEl=$('coinTotal'),coinTrackFill=$('coinTrackFill'),carNameEl=$('carName'),upgradeToast=$('upgradeToast'),upgradeName=$('upgradeName');
 const PI=Math.PI,TAU=2*PI,DIAG=Math.SQRT1_2;
-// 2x-score event; ends automatically without another Netlify deployment.
-const SCORE_BONUS_START=Date.parse('2026-10-21T11:33:07Z');
-const SCORE_BONUS_END=Date.parse('2026-10-21T12:33:07Z');
+// Server-timed 48h launch event begins on first production request.
+let SCORE_BONUS_START=0,SCORE_BONUS_END=0,serverClockOffset=0;
+function recordReleaseEvent(data){if(!data?.event)return;
+ SCORE_BONUS_START=Number(data.event.start)||0;SCORE_BONUS_END=Number(data.event.end)||0;
+ if(Number.isFinite(data.serverNow))serverClockOffset=Number(data.serverNow)-Date.now();
+ lastScoreBadgeSeconds=null;
+}
 let bonusScoreSeconds=0,lastScoreBadgeSeconds=null;
 const scoreBonusBadge=$('doubleScoreBadge');
 function updateScoreBonusBadge(){
- const now=Date.now(),isActive=now>=SCORE_BONUS_START&&now<SCORE_BONUS_END;
+ const now=Date.now()+serverClockOffset,isActive=SCORE_BONUS_START>0&&now>=SCORE_BONUS_START&&now<SCORE_BONUS_END;
  const secondsLeft=isActive?Math.ceil((SCORE_BONUS_END-now)/1000):0;
  if(secondsLeft===lastScoreBadgeSeconds)return;
  lastScoreBadgeSeconds=secondsLeft;
  scoreBonusBadge.hidden=!isActive;
- if(isActive){const mm=Math.floor(secondsLeft/60),ss=secondsLeft%60;
-  scoreBonusBadge.textContent='⚡ 2× SCORE · '+mm+':'+String(ss).padStart(2,'0')+' LEFT';}
+ if(isActive){const hh=Math.floor(secondsLeft/3600),mm=Math.floor(secondsLeft%3600/60),ss=secondsLeft%60;
+  scoreBonusBadge.textContent='⚡ 48H LAUNCH 2× SCORE · '+hh+'h '+String(mm).padStart(2,'0')+'m '+String(ss).padStart(2,'0')+'s';}
 }
 let W=0,H=0,DPR=1,background=document.createElement('canvas'),bgctx=background.getContext('2d');
 function resize(){W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,innerWidth<700?1.1:1.25);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);background.width=W;background.height=H;let g=bgctx.createLinearGradient(0,0,W,H);const theme=activeTheme();g.addColorStop(0,theme.bg[0]);g.addColorStop(.33,theme.bg[1]);g.addColorStop(.66,theme.bg[2]);g.addColorStop(1,theme.bg[3]);bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);g=bgctx.createRadialGradient(W*.28,H*.18,8,W*.28,H*.18,Math.max(W,H)*.75);g.addColorStop(0,theme.glow[0]+'55');g.addColorStop(1,theme.glow[0]+'00');bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);g=bgctx.createRadialGradient(W*.76,H*.72,6,W*.76,H*.72,Math.max(W,H)*.7);g.addColorStop(0,theme.glow[1]+'44');g.addColorStop(1,theme.glow[1]+'00');bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);let n=Math.floor(W*H/12000);for(let i=0;i<n;i++){let x=((i*73291+13137)%10103)/10103*W,y=((i*29329+893)%10037)/10037*H;let c=i%9===0?'#fff2':i%7===0?'#8ef8ff50':i%5===0?'#ff8cd450':'#d6e6ff24';bgctx.fillStyle=c;let s=i%11===0?2:1;bgctx.fillRect(x,y,s,s)}}
@@ -606,7 +610,7 @@ function syncScore(dt,fromX,fromZ,pace){
 }
 
 function showMainMenu(){
- state='menu';carTier=0;prepareRoad();player={x:.8,z:10.8,y:0,vx:0,vz:0,vy:0,heading:.58,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};
+ $('deathTopTen').innerHTML='';state='menu';carTier=0;prepareRoad();player={x:.8,z:10.8,y:0,vx:0,vz:0,vy:0,heading:.58,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};
  camInitialized=false;held=false;touchHeld=false;accumulator=0;smoke.length=0;tracks.length=0;fxPath.length=0;
  shell.classList.add('menu');overlay.classList.remove('hidden');overlay.classList.add('intro');
  kicker.textContent='STARTING CAR · STREET HATCH';headline.innerHTML='<span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em>';message.textContent='PRESS SPACE TO PLAY';
@@ -650,6 +654,7 @@ async function finishCompetitionRun(finalScore,seconds){
   const session=await onlineRunPromise;
   if(!session?.runId)return;
   const result=await onlineApi.finish(session.runId,finalScore,seconds,account.nickname,bonusScoreSeconds);
+  if(result.top){globalBoard=result.top;if(state==='dead')updateDeathLeaderboard();}
   if(submissionGeneration!==resetGeneration)return;
   boardStatus='LIVE WORLDWIDE · Latest game result saved';
   if(result.isPersonalBest&&state==='dead')message.innerHTML+='<p style="color:#9effc5;font-weight:900;font-size:12px">WORLDWIDE PERSONAL BEST · RANK #'+result.rank+'</p>';
@@ -659,6 +664,19 @@ async function finishCompetitionRun(finalScore,seconds){
 
 const modalWrap=$('modalWrap'),modalTitle=$('modalTitle'),modalContent=$('modalContent');
 const money=n=>Math.round(n).toLocaleString('en-IE');
+const RELEASE_READ_KEY='hamos-mega-release-read-v1';
+let releasePromptOpen=false;
+function showNewsletterOnce(){
+ if(account.newsSeen||(!cloudLoggedIn&&localStorage.getItem(RELEASE_READ_KEY)==='1'))return;
+ releasePromptOpen=true;$('releaseNotes').hidden=false;$('releaseRead').checked=false;$('releaseConfirm').disabled=true;
+}
+$('releaseRead').addEventListener('change',()=>{$('releaseConfirm').disabled=!$('releaseRead').checked});
+$('releaseConfirm').addEventListener('click',()=>{if(!$('releaseRead').checked)return;
+ account.newsSeen=true;try{localStorage.setItem(RELEASE_READ_KEY,'1')}catch(e){}
+ saveAccount();releasePromptOpen=false;$('releaseNotes').hidden=true;
+});
+$('releaseCopy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText('https://hamosdriftboss.netlify.app');$('releaseCopy').textContent='✓ LINK COPIED!'}catch(e){$('releaseCopy').textContent='Share: hamosdriftboss.netlify.app'}});
+
 function openModal(page){
  if(modalWrap.classList.contains('open'))return;
  modalPage=page;modalWasPlaying=state==='playing';
@@ -868,7 +886,7 @@ function renderBoard(){
 async function loadBoard(){
  if(!onlineApi){boardStatus='OFFLINE PREVIEW · Deploy this project with Netlify Functions to activate the worldwide board.';renderBoard();return;}
  boardStatus='Loading worldwide leaderboard…';renderBoard();
- try{const data=await onlineApi.load();globalBoard=data.top||[];boardStatus='LIVE WORLDWIDE · '+(data.players||0)+' RACERS';onlineNoticeEl.textContent='LIVE WORLDWIDE LEADERBOARD';}
+ try{const data=await onlineApi.load();recordReleaseEvent(data);globalBoard=data.top||[];boardStatus='LIVE WORLDWIDE · '+(data.players||0)+' RACERS';onlineNoticeEl.textContent='LIVE WORLDWIDE LEADERBOARD';}
  catch(e){boardStatus='ONLINE BOARD UNAVAILABLE · Check your Netlify Functions deployment.';onlineNoticeEl.textContent='LEADERBOARD OFFLINE';console.warn('Leaderboard read failed',e)}
  if(modalPage==='board'&&modalWrap.classList.contains('open'))renderBoard();
 }async function publishScore(force=false){
@@ -885,7 +903,7 @@ async function initOnlineLeaderboard(){
   rename:name=>competitionRequest({action:'rename',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName}),
   deleteAccount:()=>competitionRequest({action:'delete',playerId:competitionId})
  };
- try{const data=await onlineApi.load();globalBoard=data.top||[];boardStatus='LIVE WORLDWIDE · '+(data.players||0)+' RACERS';onlineNoticeEl.textContent='LIVE WORLDWIDE LEADERBOARD';}
+ try{const data=await onlineApi.load();recordReleaseEvent(data);globalBoard=data.top||[];boardStatus='LIVE WORLDWIDE · '+(data.players||0)+' RACERS';onlineNoticeEl.textContent='LIVE WORLDWIDE LEADERBOARD';}
  catch(e){boardStatus='OFFLINE PREVIEW · Publish the Netlify Functions to activate global scores.';onlineNoticeEl.textContent='ONLINE LEADERBOARD NOT CONNECTED';console.warn('Leaderboard not yet connected:',e)}
 }
 
@@ -911,10 +929,16 @@ function updateBest(save=false){checkNewAchievements();
  if(save&&!usedAssistThisRun&&score>account.verifiedBest){account.verifiedBest=score;saveAccount()}
  if(save||time-scoreSavedAt>3){scoreSavedAt=time;try{localStorage.setItem('drift-boss-premium-best',String(best))}catch(e){};/* worldwide rankings submit only when a run actually finishes */}
 }
+function updateDeathLeaderboard(){
+ const box=$('deathTopTen');if(!box)return;
+ const esc=t=>String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+ const top=globalBoard.slice(0,10);
+ box.innerHTML=top.length?'<h3>🏆 WORLD TOP TEN · CAN YOU BE #1?</h3>'+top.map((p,i)=>'<div class="deathRank"><b>'+(i<3?['🥇','🥈','🥉'][i]:'#'+(i+1))+'</b><b>'+esc(p.name)+'</b><span>'+money(p.score)+'</span></div>').join('')+'<p style="text-align:center;color:#f0c96b;font-size:11px;margin:9px 0 0">YOUR SCORE · '+money(score)+' · CHASE THE PODIUM!</p>':'<p style="font-size:12px;text-align:center">🏆 WORLD TOP TEN · Online scores loading</p>';
+}
 function displayOverlay(kind){
  state=kind;overlay.classList.remove('hidden');overlay.classList.remove('intro');shell.classList.remove('menu');driftEl.style.opacity=0;bar.style.opacity=0;
- if(kind==='dead'){kicker.textContent=score>=best&&score>0?'NEW PERSONAL BEST':'YOU FELL INTO THE VOID';headline.innerHTML='GAME <em>OVER</em><span>HAMOS DRIFT BOSS</span>';message.innerHTML='You survived <b style="color:#71eefe">'+time.toFixed(1)+' seconds</b> and earned <b style="color:#ffdc92">'+score.toLocaleString()+'</b> points.<br>Collected <b style="color:#ffd966">'+coinCount+' coins</b> · '+carLabel();play.textContent='RESTART RUN →';play.style.display='block';}
- else if(kind==='paused'){kicker.textContent='RUN PAUSED';headline.innerHTML='<span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em>';message.textContent='Ready to get back on the road?';play.textContent='RESUME →';play.style.display='block';}
+ if(kind==='dead'){updateDeathLeaderboard();kicker.textContent=score>=best&&score>0?'NEW PERSONAL BEST':'YOU FELL INTO THE VOID';headline.innerHTML='GAME <em>OVER</em><span>HAMOS DRIFT BOSS</span>';message.innerHTML='You survived <b style="color:#71eefe">'+time.toFixed(1)+' seconds</b> and earned <b style="color:#ffdc92">'+score.toLocaleString()+'</b> points.<br>Collected <b style="color:#ffd966">'+coinCount+' coins</b> · '+carLabel();play.textContent='RESTART RUN →';play.style.display='block';}
+ else if(kind==='paused'){$('deathTopTen').innerHTML='';kicker.textContent='RUN PAUSED';headline.innerHTML='<span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em>';message.textContent='Ready to get back on the road?';play.textContent='RESUME →';play.style.display='block';}
  backToModes.style.display='block';backToModes.textContent='HOME';
 }
 function resume(){state='playing';overlay.classList.add('hidden');shell.classList.remove('menu');last=0;accumulator=0}
@@ -1161,7 +1185,7 @@ function update(dt){
  if(state!=='playing')return;
  time+=dt;
  // Only actual gameplay simulation time inside the promotion gets doubled.
- const bonusNow=Date.now();
+ const bonusNow=Date.now()+serverClockOffset;
  if(bonusNow>=SCORE_BONUS_START&&bonusNow<SCORE_BONUS_END)bonusScoreSeconds+=dt;
  loopBonusTime=Math.max(0,loopBonusTime-dt);
  greenRewardFlash=Math.max(0,greenRewardFlash-dt);
