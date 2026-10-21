@@ -309,7 +309,7 @@ const CAR_STYLES=[
  {name:'LEGEND',paint:['#72ffbb','#108f80','#baffd9','#44dca3','#18716b'],roof:'#eafff5',glass:'#16425d',trim:'#fcf8ad'}
 ];
 function currentStyle(){const c=selectedCar(),dark=c.type==='phantom'||c.type==='formula';
-return {name:c.name,paint:[c.color,dark?'#12101b':c.color,c.accent,c.color,dark?'#17141f':c.color],roof:c.accent,glass:'#11384c',trim:c.accent}}
+return {name:c.name,paint:[c.color,dark?'#12101b':mixHex(c.color,'#061525',.48),mixHex(c.color,c.accent,.52),c.color,dark?'#17141f':mixHex(c.color,'#061525',.63)],roof:c.accent,glass:'#11384c',trim:c.accent}}
 function carLabel(){return selectedCar().name}
 const COINS_PER_UPGRADE=30;
 // The displayed speed is rounded from physics speed * 3.8.
@@ -1180,7 +1180,7 @@ function updateGreenStay(dt){
  const showMeter=(id!==null&&!rewarded)||showReward;
  driftEl.style.opacity=showMeter?1:0;
  bar.style.opacity=showMeter?1:0;
- driftEl.textContent=showReward?'GREEN BONUS  +15 COINS':'STAY ON GREEN  +15';
+ driftEl.textContent=showReward?'GREEN BONUS · +15 BOLTS':'STAY ON GREEN · +15 BOLTS';
  barInner.style.width=(showReward?100:greenDriftTime/GREEN_STAY_SECONDS*100).toFixed(1)+'%';
 }
 
@@ -1234,7 +1234,7 @@ function updateActiveLoop(dt){
   player.wasRight=l.dir==='x';
   collectCoin(15);loopBonusTime=1.65;screenShake=.16;
   sound(1100,.24,.06);
-  level.textContent='LOOP COMPLETE  ·  +15 COINS';
+  level.textContent='LOOP COMPLETE  ·  +15 BOLTS';
  }
  syncScore(dt,beforeX,beforeZ,pace);updateProgress();updateBest();
 }
@@ -1382,7 +1382,7 @@ function update(dt){
  syncScore(dt,raceFromX,raceFromZ,speed);
  // Progress now tracks green-road time only, independent of the car's drift.
  updateGreenStay(dt);
- level.textContent=loopBonusTime>0?'LOOP COMPLETE  ·  +15 COINS':routeKind==='green'?'GREEN ROUTE  ·  STAY 0.5s':routeKind==='red'?'RED ROUTE  ·  5-COIN TRAILS':routeKind==='orange'?'ORANGE ROUTE  ·  LOOP +15':routeKind==='purple'?'PURPLE TURBO · +50% SPEED · +15 BOLTS':'';
+ level.textContent=loopBonusTime>0?'LOOP COMPLETE  ·  +15 BOLTS':routeKind==='green'?'GREEN ROUTE  ·  STAY 0.5s':routeKind==='red'?'RED ROUTE  ·  FIVE-BOLT PICKUPS':routeKind==='orange'?'ORANGE ROUTE  ·  LOOP +15 BOLTS':routeKind==='purple'?'PURPLE TURBO · +50% SPEED · +15 BOLTS':'';
  level.style.color=loopBonusTime>0||routeKind==='orange'?'#ffba67':routeKind==='green'?'#9bffbf':routeKind==='red'?'#ff8795':routeKind==='purple'?'#cf8cff':'#b5cedfb0';
  updateProgress();collectNearbyCoins();collectNearbyBananas();updateBest();
  for(let i=coinBursts.length-1;i>=0;i--){coinBursts[i].life-=dt;if(coinBursts[i].life<=0)coinBursts.splice(i,1)}
@@ -1635,7 +1635,8 @@ if(player.y>=0&&onRoad(player.x,player.z)){
  // Footprint rotates with the displayed model but remains projected on the road.
  const h=state==='menu'?menuYaw:player.heading+(activeLoop?0:bananaSpinAngle),co=Math.cos(h),si=Math.sin(h);
  const shadow=(x,z)=>vec(player.x+co*x+si*z,.025,player.z-si*x+co*z);
- poly([shadow(-1.5,-2.9),shadow(1.5,-2.9),shadow(1.5,2.9),shadow(-1.5,2.9)],player.airborne?'#03051b47':'#03051b70');
+ const shadeLength=kind==='bus'?3.95:kind==='truck'?3.12:2.9;
+ poly([shadow(-1.5,-shadeLength),shadow(1.5,-shadeLength),shadow(1.5,shadeLength),shadow(-1.5,shadeLength)],player.airborne?'#03051b47':'#03051b70');
 }
 for(let zz of [-1.4,1.4])for(let xx of [-1.34,1.34])box(xx-.26,xx+.26,.15,.88,zz-.7,zz+.7,['#0b111c','#08101a','#182238','#111c2e','#050912']);
 box(-1.23,1.23,.43,1.18,-2.23,2.25,cs.paint);face([[-1.02,1.17,-1.00],[1.02,1.17,-1.00],[.84,1.91,-.64],[-.84,1.91,-.64]],'#123350');
@@ -1680,6 +1681,9 @@ if(kind==='lambo'){
  box(.84,1.13,1.1,1.65,-2.78,-2.41,['#baff72','#2b651a','#c9ff89','#8ed834','#376b13']);
 }
 faces.sort((a,b)=>b.depth-a.depth);for(const f of faces)poly(f.pts,f.color);
+if(['lambo','tokyo','phantom'].includes(kind)){
+ for(const offset of [-1,1]){const a=local(offset*1.2,.16,-2.0),b=local(offset*1.2,.16,1.8);segment(a,b,kind==='lambo'?'#bdff41':kind==='tokyo'?'#ff62dd':'#966cff',2.5)}
+}
 if(kind==='bus'){const p=project(local(0,2.03,3.76));if(p&&p.depth>0){ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='1000 '+Math.max(10,Math.min(28,camera.zoom/p.depth*.36))+'px system-ui';ctx.fillStyle='#fff4a7';ctx.fillText('44',p.x,p.y)}}
 segment(local(-1.04,1.07,-2.36),local(-.57,1.07,-2.36),'#ff667e',3.1);segment(local(.57,1.07,-2.36),local(1.04,1.07,-2.36),'#ff667e',3.1);
 }
