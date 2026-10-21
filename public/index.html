@@ -283,7 +283,7 @@ const ATMOSPHERES=[
 {"name":"Obsidian Gold","price":0,"desc":"Obsidian Gold · exclusive colourway","bg":["#050506","#17171a","#343031","#030306"],"glow":["#ffc849","#fff0ba"],"deck":["#202024","#363035","#18181c"],"neon":["#ffca43","#fff4a6"]},
 {"name":"Aurora Dream","price":0,"desc":"Aurora Dream · exclusive colourway","bg":["#080d23","#1d3660","#3d9e8c","#0b1330"],"glow":["#7cf9e6","#cf88ff"],"deck":["#24395c","#377c7a","#1d2b55"],"neon":["#8affb0","#d8a0ff"]}
 ];
-let account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:false,worldMigrationV3:false};
+let account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:false,worldMigrationV3:false,coinAchievementMigrationV2:false};
 try{const a=JSON.parse(localStorage.getItem(DB_SAVE_KEY)||'{}');account={...account,...a};}catch(e){}
 account.wallet=Number.isFinite(+account.wallet)?Math.max(0,Math.floor(+account.wallet)):0;
 // Old achievement-theme indices 8 and 9 moved after the ten new base atmospheres.
@@ -296,7 +296,15 @@ for(const kind of ['smoke','atmos']){
  account[kind+'Owned']=Array.from(new Set([0,...(Array.isArray(account[kind+'Owned'])?account[kind+'Owned']:[]).filter(i=>Number.isInteger(i)&&i>=0&&i<n)]));
  if(!account[kind+'Owned'].includes(account[kind+'Equipped']))account[kind+'Equipped']=0;
 }
-account.achievementClaims=Array.isArray(account.achievementClaims)?account.achievementClaims:[];account.achievementCounts={loops:0,bananas:0,green:0,red:0,...(account.achievementCounts||{})};
+account.achievementClaims=Array.isArray(account.achievementClaims)?account.achievementClaims:[];
+// Earlier claimed world rewards can be reclaimed once as the new 20K/200K coin rewards.
+function migrateCoinAchievements(){
+ if(account.coinAchievementMigrationV2===true)return;
+ account.achievementClaims=account.achievementClaims.filter(i=>i!==2&&i!==7);
+ account.coinAchievementMigrationV2=true;
+}
+migrateCoinAchievements();
+account.achievementCounts={loops:0,bananas:0,green:0,red:0,...(account.achievementCounts||{})};
 const cleanName=name=>String(name||'').trim().replace(/[^a-zA-Z0-9 _-]/g,'').replace(/\s{2,}/g,' ').slice(0,18);
 account.nickname=cleanName(account.nickname);
 // Retain legacy garage ownership and translate legacy single drift into a per-car setup.
@@ -710,7 +718,7 @@ function applyCloudProfile(data){
  account.carSmoke=Array.isArray(p.carSmoke)&&p.carSmoke.length===10
   ?p.carSmoke.map(v=>Number.isInteger(v)&&v>=0&&v<20?v:0)
   :Array(10).fill(account.smokeEquipped||0);
- syncCarSmoke();
+ syncCarSmoke();migrateCoinAchievements();
  if(data.playerId){competitionId=data.playerId;localStorage.setItem(COMPETITION_ID_KEY,competitionId)}
  try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}
  best=account.verifiedBest||0;bestEl.textContent=String(best).padStart(6,'0');try{localStorage.setItem('drift-boss-premium-best',String(best))}catch(e){}
@@ -1153,7 +1161,7 @@ async function confirmAccountReset(){
   const result=await onlineApi.deleteAccount();
   if(!result?.deleted)throw Error('Could not remove your leaderboard score.');
   // Preserve all local files until the cloud reset has been acknowledged.
-  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true};
+  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true,coinAchievementMigrationV2:true,carSmoke:Array(10).fill(0)};
   if(cloudLoggedIn)await cloudRequest({action:'reset',profile:blankProfile});
   resetGeneration++;
   onlineRunFinished=true;onlineRunPromise=null;
