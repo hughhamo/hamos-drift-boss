@@ -589,23 +589,70 @@ async function loadModeratorRows(){
  }catch(e){moderatorRows=[];moderatorError=e.message||'Admin access unavailable';}
  renderAdmin();
 }
+
+async function refreshModeratorLeaderboard(){
+ if(!onlineApi)return;
+ try{
+  const data=await onlineApi.load();globalBoard=data.top||[];
+  boardStatus='LIVE WORLDWIDE · '+(data.players||0)+' RACERS';
+ }catch(e){console.warn('Leaderboard refresh after moderation failed:',e)}
+}
 function renderAdmin(){
  const esc=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
- modalContent.innerHTML='<p class="modalText">ADMIN ONLY · Correct misleading nicknames on the worldwide board. This does not change scores. Never publish your admin password.</p><input id="modKey" type="password" autocomplete="off" placeholder="Private moderation key (configured in Netlify)" value="'+esc(moderatorKey)+'"><button id="modLoad" class="primaryMini">LOAD PLAYERS</button><p class="modalText" id="modError">'+esc(moderatorError)+'</p><div>'+moderatorRows.map((p,i)=>'<div class="tierCard" style="margin-bottom:12px"><div class="tierTitle">#'+(i+1)+' '+esc(p.name)+' · '+Number(p.score).toLocaleString()+' points</div><input data-name="'+i+'" maxlength="18" value="'+esc(p.name)+'" placeholder="Corrected nickname"><input data-full="'+i+'" maxlength="48" value="'+esc(p.fullName)+'" placeholder="Optional corrected display name"><label class="modalText"><input data-show="'+i+'" type="checkbox" '+(!!p.fullName?'checked':'')+'> Show secondary name</label><input data-reason="'+i+'" maxlength="160" placeholder="Reason for correction (required)"><button data-save="'+i+'" class="primaryMini">SAVE CORRECTION</button><button data-clear="'+i+'" class="previewMini" style="margin-left:8px">REMOVE MODERATOR OVERRIDE</button></div>').join('')+'</div>';
+ modalContent.innerHTML='<p class="modalText">ADMIN ONLY · Correct display names or permanently ban player accounts from the worldwide leaderboard. Bans require the private Netlify moderation key and are logged. Banned accounts cannot submit new scores. Never share the key.</p>'
+ +'<input id="modKey" type="password" autocomplete="off" placeholder="Private Netlify moderation key" value="'+esc(moderatorKey)+'"><button id="modLoad" class="primaryMini">LOAD PLAYERS</button><p class="modalText" id="modError">'+esc(moderatorError)+'</p>'
+ +'<div>'+moderatorRows.map((p,i)=>{
+  const banned=!!p.banned;
+  return '<div class="tierCard" style="margin-bottom:12px"><div class="tierTitle">#'+(i+1)+' '+esc(p.name)+' · '+Number(p.score).toLocaleString()+' points '+(banned?'<span style="color:#ff9d9d">· PERMANENTLY BANNED</span>':'')+'</div>'
+  +(banned?'<p class="tierSub">Banned: '+esc(p.banReason||'No reason recorded')+' · '+esc(p.bannedAt||'')+'</p>':'')
+  +'<input data-name="'+i+'" maxlength="18" value="'+esc(p.name)+'" placeholder="Corrected nickname"><input data-full="'+i+'" maxlength="48" value="'+esc(p.fullName)+'" placeholder="Optional corrected display name">'
+  +'<label class="modalText"><input data-show="'+i+'" type="checkbox" '+(!!p.fullName?'checked':'')+'> Show secondary name</label>'
+  +'<input data-reason="'+i+'" maxlength="160" placeholder="Reason for name correction (required)">'
+  +'<button data-save="'+i+'" class="primaryMini">SAVE CORRECTION</button>'
+  +'<button data-clear="'+i+'" class="previewMini" style="margin-left:8px">REMOVE MODERATOR OVERRIDE</button>'
+  +'<div style="border-top:1px solid #ffb3b333;padding-top:12px;margin-top:12px">'
+  +(banned?'<button data-unban="'+i+'" class="primaryMini">UNBAN PLAYER ACCOUNT</button>'
+          :'<input data-banreason="'+i+'" maxlength="160" placeholder="Reason for permanent ban (at least 6 characters)" aria-label="Ban reason for '+esc(p.name)+'"><button data-ban="'+i+'" class="previewMini" style="border-color:#ff7a8f;color:#ffced5">PERMANENTLY BAN PLAYER</button>')
+  +'</div></div>';
+ }).join('')+'</div>';
  $('modLoad').onclick=()=>{moderatorKey=$('modKey').value;loadModeratorRows()};
  for(const b of modalContent.querySelectorAll('[data-save]'))b.onclick=async()=>{
   const i=+b.dataset.save,p=moderatorRows[i];b.disabled=true;
-  try{await competitionRequest({action:'adminEdit',adminKey:moderatorKey,targetId:p.id,newName:modalContent.querySelector('[data-name="'+i+'"]').value,newFullName:modalContent.querySelector('[data-full="'+i+'"]').value,showFullName:modalContent.querySelector('[data-show="'+i+'"]').checked,reason:modalContent.querySelector('[data-reason="'+i+'"]').value});await loadModeratorRows();await loadBoard()}
-  catch(e){moderatorError=e.message;renderAdmin()}
+  try{
+   await competitionRequest({action:'adminEdit',adminKey:moderatorKey,targetId:p.id,newName:modalContent.querySelector('[data-name="'+i+'"]').value,newFullName:modalContent.querySelector('[data-full="'+i+'"]').value,showFullName:modalContent.querySelector('[data-show="'+i+'"]').checked,reason:modalContent.querySelector('[data-reason="'+i+'"]').value});
+   await refreshModeratorLeaderboard();await loadModeratorRows();
+  }catch(e){moderatorError=e.message;renderAdmin()}
  };
  for(const b of modalContent.querySelectorAll('[data-clear]'))b.onclick=async()=>{
   const i=+b.dataset.clear,p=moderatorRows[i];b.disabled=true;
-  try{await competitionRequest({action:'adminClear',adminKey:moderatorKey,targetId:p.id});await loadModeratorRows();await loadBoard()}
-  catch(e){moderatorError=e.message;renderAdmin()}
+  try{
+   await competitionRequest({action:'adminClear',adminKey:moderatorKey,targetId:p.id});
+   await refreshModeratorLeaderboard();await loadModeratorRows();
+  }catch(e){moderatorError=e.message;renderAdmin()}
+ };
+ for(const b of modalContent.querySelectorAll('[data-ban]'))b.onclick=async()=>{
+  const i=+b.dataset.ban,p=moderatorRows[i];
+  const reason=modalContent.querySelector('[data-banreason="'+i+'"]').value.trim();
+  if(reason.length<6){moderatorError='Enter at least 6 characters explaining the ban.';$('modError').textContent=moderatorError;return}
+  if(!window.confirm('PERMANENTLY BAN '+p.name+' from the worldwide leaderboard? Their current score will be hidden and this player account will be blocked from future score submissions. Reason: '+reason))return;
+  b.disabled=true;
+  try{
+   await competitionRequest({action:'adminBan',adminKey:moderatorKey,targetId:p.id,reason});
+   await refreshModeratorLeaderboard();await loadModeratorRows();
+  }catch(e){moderatorError=e.message;renderAdmin()}
+ };
+ for(const b of modalContent.querySelectorAll('[data-unban]'))b.onclick=async()=>{
+  const i=+b.dataset.unban,p=moderatorRows[i];
+  if(!window.confirm('UNBAN '+p.name+'? Their previous best score can reappear on the leaderboard.'))return;
+  b.disabled=true;
+  try{
+   await competitionRequest({action:'adminUnban',adminKey:moderatorKey,targetId:p.id});
+   await refreshModeratorLeaderboard();await loadModeratorRows();
+  }catch(e){moderatorError=e.message;renderAdmin()}
  };
 }
 function renderModal(){
- const titles={shop:'CUSTOM GARAGE',board:'ALL-TIME HIGH SCORES',profile:'YOUR PLAYER PROFILE',achievements:'ACHIEVEMENTS',admin:'PLAYER NAME MODERATION'};
+ const titles={shop:'CUSTOM GARAGE',board:'ALL-TIME HIGH SCORES',profile:'YOUR PLAYER PROFILE',achievements:'ACHIEVEMENTS',admin:'PLAYER MODERATION · BAN CONTROLS'};
  modalTitle.textContent=titles[modalPage];
  if(modalPage==='shop')renderShop();
  if(modalPage==='profile')renderProfile();
