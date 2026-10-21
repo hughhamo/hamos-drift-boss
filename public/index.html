@@ -1753,7 +1753,7 @@ function local(x,y,z){
  // Showroom view scales only the displayed model, never gameplay or physics.
  if(state==='menu'){x*=2.35;y*=2.35;z*=2.35}
  // Roll about the car's front/back axis and pitch about the axle before steering.
- const roll=(player.tilt||0)+(player.edgeRoll||0),pitch=(player.edgePitch||0)+(player.loopPitch||0);
+ const roll=(selectedCar().type==='bus'?.35:1)*(player.tilt||0)+(selectedCar().type==='bus'?.75:1)*(player.edgeRoll||0),pitch=(selectedCar().type==='bus'?.60:1)*(player.edgePitch||0)+(player.loopPitch||0);
  const cr=Math.cos(roll),sr=Math.sin(roll),cp=Math.cos(pitch),sp=Math.sin(pitch);
  const xr=x*cr-y*sr,yr=x*sr+y*cr;
  const yp=yr*cp-z*sp,zp=yr*sp+z*cp;
@@ -1843,6 +1843,7 @@ if(kind==='bus'){
  box(-1.28,1.28,.48,.92,-4.48,4.28,['#1194a4','#106875','#2ad2d5','#29aab3','#126777']);
  for(const z of [-2.92,2.70])for(const x of [-1.32,1.32])box(x-.29,x+.29,.27,.97,z-.47,z+.47,['#162633','#050c16','#3b4b60','#0c1829','#091524']);
  box(-.62,.62,2.66,2.80,-2.2,.3,['#ced6d7','#7b919f','#e9fbff','#acbeca','#748d9c']);
+ for(const z of [-3.8,-2.2,-.6,1.0,2.6])for(const x of [-1.28,1.28])box(x-.035,x+.035,1.32,1.41,z,z+1.07,['#fff6b3','#c7d4df','#eff8ff','#e5edf9','#abbdcc']);
  box(-.68,.68,1.98,2.36,4.33,4.47,['#fff295','#16303c','#324c57','#ffe074','#121e33']);
 }
 if(kind==='phantom'){
@@ -2083,7 +2084,7 @@ function drawPedestal(){
  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(p.x,p.y+12,w,h,0,0,TAU);ctx.fill();
  ctx.strokeStyle='rgba(188,240,255,.33)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,p.y+12,w,h,0,0,TAU);ctx.stroke();
 }
-function render(dt){updateCamera(dt);ctx.drawImage(background,0,0,W,H);const underRoad=(player.y<-.055&&(player.fallingOff||state==='falling')&&!activeLoop);if(underRoad)drawCar();drawRoad();if(state==='menu'){drawPedestal();drawCar()}drawLoops();drawBananas();drawCoins();drawSkids();drawFxRibbon();drawTwinChase();if(!underRoad&&state!=='menu')drawCar();drawUpgradeCoinBlaster();drawAttachedFX();if(state==='menu'){const g=ctx.createLinearGradient(0,H*.18,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.26)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}else if(state==='playing'){if(activeLoop){ctx.fillStyle='rgba(255,153,34,.055)';ctx.fillRect(0,0,W,H)}else if(player.boost>.02){let a=clamp(player.boost*.18,0,.09);ctx.fillStyle='rgba(255,70,178,'+a+')';ctx.fillRect(0,0,W,H)}else if(driftLeft>.25){let a=clamp((driftLeft-.25)/.41,0,1)*.042;ctx.fillStyle='rgba(248,164,77,'+a+')';ctx.fillRect(0,0,W,H)}}}
+function render(dt){updateCamera(dt);ctx.drawImage(background,0,0,W,H);const underRoad=(player.y<-.055&&(player.fallingOff||state==='falling')&&!activeLoop);if(underRoad)drawCar();drawRoad();if(state==='menu'){drawPedestal();drawCar()}drawLoops();drawBananas();drawCoins();drawSkids();drawFxRibbon();drawBonusTrail();drawTwinChase();if(!underRoad&&state!=='menu')drawCar();drawUpgradeCoinBlaster();drawAttachedFX();if(state==='menu'){const g=ctx.createLinearGradient(0,H*.18,0,H);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.26)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}else if(state==='playing'){if(activeLoop){ctx.fillStyle='rgba(255,153,34,.055)';ctx.fillRect(0,0,W,H)}else if(player.boost>.02){let a=clamp(player.boost*.18,0,.09);ctx.fillStyle='rgba(255,70,178,'+a+')';ctx.fillRect(0,0,W,H)}else if(driftLeft>.25){let a=clamp((driftLeft-.25)/.41,0,1)*.042;ctx.fillStyle='rgba(248,164,77,'+a+')';ctx.fillRect(0,0,W,H)}}}
 const FIX=1/120;
 let lastPreviewAt=0;
 function drawGaragePreview(ts){
