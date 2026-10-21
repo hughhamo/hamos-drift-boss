@@ -121,6 +121,14 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 #modalWindow{border-color:#83ebf597!important;box-shadow:0 28px 85px #000c,0 0 20px #75dafe14!important}
 @media(max-width:620px){#openShopMenu{left:9px!important;top:43%!important;width:91px!important;height:91px!important}#openAchievementsMenu{left:10px!important;top:66%!important;width:90px!important;height:90px!important}#openAchievementsMenu span{font-size:8px!important}}
 @keyframes rewardReady{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.64;transform:scale(.965)}}.achCard button.rewardReady{animation:rewardReady 1.35s ease-in-out infinite;border:1px solid #ffffff5a;box-shadow:0 0 0 2px #ffffff0a;will-change:transform,opacity}@media(prefers-reduced-motion:reduce){.achCard button.rewardReady{animation:none}}
+
+/* Temporary score promotion. The badge vanishes automatically after the deadline. */
+#doubleScoreBadge{position:absolute;z-index:7;top:64px;left:50%;transform:translateX(-50%);pointer-events:none;
+ border:1px solid #ffe58e98;border-radius:999px;padding:6px 16px;
+ background:linear-gradient(115deg,#8a4614eb,#522b1ded);box-shadow:0 0 25px #ffc45d48;
+ color:#fff0bc;font-weight:1000;font-size:12px;letter-spacing:.12em;white-space:nowrap;text-align:center}
+#doubleScoreBadge[hidden]{display:none!important}
+@media(max-width:650px){#doubleScoreBadge{top:77px;font-size:10px;padding:5px 9px;letter-spacing:.03em}}
 </style>
 </head>
 <body>
@@ -128,6 +136,7 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 <canvas id="game" aria-label="Play Hamos Drift Boss"></canvas>
 <div class="hud"><div class="logo">HAMOS <b>DRIFT BOSS</b><small>ONLINE COMPETITION</small></div><div class="right"><div class="metric"><small>SCORE</small><strong id="score">000000</strong></div><div class="metric"><small>BEST</small><strong id="best">000000</strong></div><button id="sound" class="sound" title="Toggle sound" aria-label="Toggle sound">🔊</button></div></div>
 
+<div id="doubleScoreBadge" hidden aria-live="off"></div>
 <div id="centerInfo"><span id="level"></span><div id="drift">DRIFT!</div><div id="bar"><div id="barInner"></div></div></div>
 <div id="speedCorner"><small>SPEED</small><strong id="speed">140</strong></div>
 <div id="coinPanel"><div class="topline"><span class="coin-icon">★</span><span id="coinProgress">0 / 30</span><span id="coinTotal">0 TOTAL</span></div><div class="coin-track"><span id="coinTrackFill"></span></div><div class="coin-car">CURRENT CAR <strong id="carName">STREET HATCH</strong></div></div>
@@ -146,6 +155,20 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d',{alpha:false});
 const $=id=>document.getElementById(id),shell=$('shell'),backToModes=$('backToModes'),scoreEl=$('score'),bestEl=$('best'),speedEl=$('speed'),driftEl=$('drift'),bar=$('bar'),barInner=$('barInner'),level=$('level'),overlay=$('overlay'),headline=$('headline'),kicker=$('kicker'),message=$('message'),play=$('play'),soundBtn=$('sound'),coinProgressEl=$('coinProgress'),coinTotalEl=$('coinTotal'),coinTrackFill=$('coinTrackFill'),carNameEl=$('carName'),upgradeToast=$('upgradeToast'),upgradeName=$('upgradeName');
 const PI=Math.PI,TAU=2*PI,DIAG=Math.SQRT1_2;
+// 2x-score event; ends automatically without another Netlify deployment.
+const SCORE_BONUS_START=Date.parse('2026-10-21T11:33:07Z');
+const SCORE_BONUS_END=Date.parse('2026-10-21T12:33:07Z');
+let bonusScoreSeconds=0,lastScoreBadgeSeconds=null;
+const scoreBonusBadge=$('doubleScoreBadge');
+function updateScoreBonusBadge(){
+ const now=Date.now(),isActive=now>=SCORE_BONUS_START&&now<SCORE_BONUS_END;
+ const secondsLeft=isActive?Math.ceil((SCORE_BONUS_END-now)/1000):0;
+ if(secondsLeft===lastScoreBadgeSeconds)return;
+ lastScoreBadgeSeconds=secondsLeft;
+ scoreBonusBadge.hidden=!isActive;
+ if(isActive){const mm=Math.floor(secondsLeft/60),ss=secondsLeft%60;
+  scoreBonusBadge.textContent='⚡ 2× SCORE · '+mm+':'+String(ss).padStart(2,'0')+' LEFT';}
+}
 let W=0,H=0,DPR=1,background=document.createElement('canvas'),bgctx=background.getContext('2d');
 function resize(){W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,innerWidth<700?1.1:1.25);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);background.width=W;background.height=H;let g=bgctx.createLinearGradient(0,0,W,H);const theme=activeTheme();g.addColorStop(0,theme.bg[0]);g.addColorStop(.33,theme.bg[1]);g.addColorStop(.66,theme.bg[2]);g.addColorStop(1,theme.bg[3]);bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);g=bgctx.createRadialGradient(W*.28,H*.18,8,W*.28,H*.18,Math.max(W,H)*.75);g.addColorStop(0,theme.glow[0]+'55');g.addColorStop(1,theme.glow[0]+'00');bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);g=bgctx.createRadialGradient(W*.76,H*.72,6,W*.76,H*.72,Math.max(W,H)*.7);g.addColorStop(0,theme.glow[1]+'44');g.addColorStop(1,theme.glow[1]+'00');bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);let n=Math.floor(W*H/12000);for(let i=0;i<n;i++){let x=((i*73291+13137)%10103)/10103*W,y=((i*29329+893)%10037)/10037*H;let c=i%9===0?'#fff2':i%7===0?'#8ef8ff50':i%5===0?'#ff8cd450':'#d6e6ff24';bgctx.fillStyle=c;let s=i%11===0?2:1;bgctx.fillRect(x,y,s,s)}}
 addEventListener('resize',resize);
@@ -501,7 +524,7 @@ function rebuildBoundary(){
 // both real distance covered and actual coin earnings. More coins also
 // upgrade your car, letting you cover the remaining route faster.
 function syncScore(dt,fromX,fromZ,pace){
- score=Math.floor(time*145);
+ score=Math.floor((time+bonusScoreSeconds)*145);
  scoreEl.textContent=String(score).padStart(6,'0');
  speedEl.textContent=String(Math.round(pace*3.8));updateSpeedHud();
 }
@@ -550,7 +573,7 @@ async function finishCompetitionRun(finalScore,seconds){
  try{
   const session=await onlineRunPromise;
   if(!session?.runId)return;
-  const result=await onlineApi.finish(session.runId,finalScore,seconds,account.nickname);
+  const result=await onlineApi.finish(session.runId,finalScore,seconds,account.nickname,bonusScoreSeconds);
   if(submissionGeneration!==resetGeneration)return;
   boardStatus='LIVE WORLDWIDE · Latest game result saved';
   if(result.isPersonalBest&&state==='dead')message.innerHTML+='<p style="color:#9effc5;font-weight:900;font-size:12px">WORLDWIDE PERSONAL BEST · RANK #'+result.rank+'</p>';
@@ -774,7 +797,7 @@ async function initOnlineLeaderboard(){
  onlineApi={
   load:()=>competitionRequest(),
   start:name=>competitionRequest({action:'start',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName}),
-  finish:(runId,score,seconds,name)=>competitionRequest({action:'finish',playerId:competitionId,runId,score,seconds,name,fullName:account.fullName,showFullName:account.showFullName}),
+  finish:(runId,score,seconds,name,bonusSeconds)=>competitionRequest({action:'finish',playerId:competitionId,runId,score,seconds,bonusSeconds,name,fullName:account.fullName,showFullName:account.showFullName}),
   rename:name=>competitionRequest({action:'rename',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName}),
   deleteAccount:()=>competitionRequest({action:'delete',playerId:competitionId})
  };
@@ -786,7 +809,7 @@ function prepareRoad(){seed=765239;fxSeed=318791;tiles=[];runs=[];ramps=[];banan
 function restart(){
  if(resetPending||resetBusy)return;
  carTier=0;prepareRoad();player={x:0,z:7,y:0,vx:0,vz:40,vy:0,heading:0,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};
- state='playing';fxPath.length=0;held=false;touchHeld=false;driftLeft=0;score=0;time=0;deadSeconds=0;dropShown=false;camInitialized=false;tracks=[];smoke=[];coinBursts=[];coinCount=0;carTier=0;routeKind='normal';loopBonusTime=0;activeLoop=null;greenDriftTime=0;greenBranchId=null;greenRewardFlash=0;greenDriftAwarded.clear();greenDriftGrace=0;bananaSpinTime=0;bananaSpinAngle=0;bananaSpinCount=0;upgradeFlash=0;upgradeToast.classList.remove('visible');updateCoinHud();skidClock=0;streak=0;screenShake=0;accumulator=0;
+ state='playing';fxPath.length=0;held=false;touchHeld=false;driftLeft=0;score=0;time=0;bonusScoreSeconds=0;deadSeconds=0;dropShown=false;camInitialized=false;tracks=[];smoke=[];coinBursts=[];coinCount=0;carTier=0;routeKind='normal';loopBonusTime=0;activeLoop=null;greenDriftTime=0;greenBranchId=null;greenRewardFlash=0;greenDriftAwarded.clear();greenDriftGrace=0;bananaSpinTime=0;bananaSpinAngle=0;bananaSpinCount=0;upgradeFlash=0;upgradeToast.classList.remove('visible');updateCoinHud();skidClock=0;streak=0;screenShake=0;accumulator=0;
  scoreEl.textContent='000000';speedEl.textContent='150';level.textContent='';overlay.classList.add('hidden');overlay.classList.remove('intro');shell.classList.remove('menu');backToModes.style.display='none';updateSpeedHud();play.blur();beginCompetitionRun();sound(510,.08,.032);
 }
 function endGame(){
@@ -839,7 +862,7 @@ async function confirmAccountReset(){
   competitionId=createCompetitionId();
   try{localStorage.setItem(COMPETITION_ID_KEY,competitionId)}catch(e){}
   account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],smokeEquipped:0,atmosEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false};
-  best=0;score=0;time=0;coinCount=0;garageFree=false;
+  best=0;score=0;time=0;bonusScoreSeconds=0;coinCount=0;garageFree=false;
   bestEl.textContent='000000';scoreEl.textContent='000000';
   previewSmokeIndex=null;previewAtmosIndex=null;
   saveAccount();resetPending=false;$('resetWarning').classList.remove('active');
@@ -1053,6 +1076,9 @@ function update(dt){
  }
  if(state!=='playing')return;
  time+=dt;
+ // Only actual gameplay simulation time inside the promotion gets doubled.
+ const bonusNow=Date.now();
+ if(bonusNow>=SCORE_BONUS_START&&bonusNow<SCORE_BONUS_END)bonusScoreSeconds+=dt;
  loopBonusTime=Math.max(0,loopBonusTime-dt);
  greenRewardFlash=Math.max(0,greenRewardFlash-dt);
  updateBananaSpin(dt);
@@ -1652,7 +1678,7 @@ function drawGaragePreview(ts){
  }
  c.save();c.translate(w*.73,h*.36);c.rotate(-.24);c.shadowColor='#34f9ff';c.shadowBlur=14;c.fillStyle='#19bad1';c.fillRect(-41,-21,92,48);c.fillStyle='#bff9ff';c.fillRect(-20,-18,47,37);c.fillStyle='#0b1d39';c.fillRect(16,-11,15,22);c.fillStyle='#061521';c.fillRect(-38,-25,22,6);c.fillRect(22,-25,22,6);c.fillRect(-38,27,22,6);c.fillRect(22,27,22,6);c.restore();
 }
-function frame(ts){if(!last)last=ts;let dt=Math.min(.05,(ts-last)/1000);last=ts;updateFxQuality(dt);
+function frame(ts){if(!last)last=ts;let dt=Math.min(.05,(ts-last)/1000);last=ts;updateFxQuality(dt);updateScoreBonusBadge();
 if(state==='menu'){menuYaw=(menuYaw+dt*.58)%TAU;player.tilt=0;player.edgeRoll=0;player.edgePitch=0;player.loopPitch=0;player.y=0}accumulator=Math.min(.07,accumulator+dt);let n=0;while(accumulator>=FIX&&n<7){update(FIX);accumulator-=FIX;n++}render(dt);drawGaragePreview(ts);requestAnimationFrame(frame)}
 resize();initOnlineLeaderboard();prepareRoad();player={x:.8,z:10.8,y:0,vx:0,vz:0,vy:0,heading:.58,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};state='menu';shell.classList.add('menu');overlay.classList.add('intro');play.style.display='none';updateCoinHud();updateSpeedHud();requestAnimationFrame(frame);
 window.DriftBossDebug={
