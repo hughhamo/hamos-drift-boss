@@ -156,7 +156,7 @@ export default async function leaderboard(req){
       const best=Math.max(score,Number(prior?.score)||0);
       await store.setJSON(key,{...prior,id,name,fullName,showFullName,score:best,updatedAt:new Date().toISOString()});
       const all=await scores(store);
-      return json({saved:true,score:best,isPersonalBest:score>(Number(prior?.score)||0),rank:all.findIndex(x=>x.id===id)+1,players:all.length});
+      return json({saved:true,score:best,isPersonalBest:score>(Number(prior?.score)||0),rank:all.findIndex(x=>x.id===id)+1,players:all.length,top:all.slice(0,10).map(({name,fullName,score})=>({name,fullName,score}))});
     }
     return bad('Unknown action');
   }catch(err){
