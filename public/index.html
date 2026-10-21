@@ -910,7 +910,38 @@ function renderProfile(){
  <form id="playerForm"><input id="nameInput" maxlength="18" autocomplete="nickname" spellcheck="false" placeholder="Your racing nickname" value="${account.nickname.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" /><button type="submit" class="primaryMini">SAVE NAME</button></form>
  <p class="modalText">Optional full name (public; shown subtly beside your nickname). You can leave this blank.</p><input id="fullNameInput" maxlength="48" placeholder="Optional full name" value="${String(account.fullName||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\"/g,'&quot;')}" /><label class="modalText" style="display:block;margin:10px 0"><input type="checkbox" id="showFullName" ${account.showFullName?'checked':''} /> Display my full name publicly</label><div id="profileNote">${account.nickname?'Playing as '+account.nickname:'Choose a name to appear on the online leaderboard.'}</div>
  <div class="walletBar" style="margin-top:18px">BEST CLASSIC: ${money(best)} · Verified without cheat keys: ${money(account.verifiedBest)} · Wallet: ${money(account.wallet)}</div>
- <p class="modalText">Only runs played after this online version is published count toward the worldwide rankings. The server checks game time and rejects impossible instant scores, but no browser game can be completely cheat-proof. Your garage and coins remain saved on this device.</p>`;
+ <p class="modalText">Only runs played after this online version is published count toward the worldwide rankings. The server checks game time and rejects impossible instant scores, but no browser game can be completely cheat-proof. Your garage and wallet are stored locally, with optional cloud backup when signed in.</p>`;
+ const cloudBox=document.createElement('section');cloudBox.style.marginTop='20px';
+ cloudBox.style.padding='16px';cloudBox.style.border='1px solid #8defff55';cloudBox.style.borderRadius='14px';cloudBox.style.background='#091e32';
+ cloudBox.innerHTML='<h3 style="margin:0 0 7px">🔐 OPTIONAL CLOUD SAVE</h3><p class="modalText">Keep playing as a guest, or save your wallet, garage, achievements and nickname under a username and password so you can recover them on another device. Once signed in, this browser remembers your session for up to 60 days. Never reuse a password from another website.</p>'+
+ (cloudLoggedIn?'<div class="cloudStatus">✅ Signed in as <b>'+cloudUsername+'</b> · Automatic backup enabled</div><button id="cloudSyncNow" class="primaryMini">SYNC NOW</button> <button id="cloudSignOut" class="primaryMini">SIGN OUT</button>':
+ '<div class="cloudStatus">GUEST MODE · Your current saves remain on this device until you register.</div><div class="cloudForm"><input id="cloudUser" maxlength="18" autocomplete="username" spellcheck="false" placeholder="Username (3–18 letters/numbers)"><input id="cloudPass" type="password" minlength="8" maxlength="72" autocomplete="current-password" placeholder="Password (8+ characters)"><button id="cloudRegister" type="button">CREATE ACCOUNT & BACK UP THIS DEVICE</button><button id="cloudLogin" type="button" style="background:#c6c9ff">LOG IN & RESTORE CLOUD SAVE</button></div>'+
+ '<p class="modalText">Signing into an existing account loads that account’s cloud save over this device’s current progress. Create an account first if you want to keep your current guest save.</p>')
+ +'<div id="cloudFeedback" class="cloudStatus" role="status"></div>';
+ modalContent.appendChild(cloudBox);
+ const feedback=$('cloudFeedback');
+ if(cloudLoggedIn){
+  $('cloudSyncNow').addEventListener('click',async()=>{feedback.textContent='Saving…';try{await cloudRequest({action:'save',profile:account});feedback.textContent='✓ Cloud save completed.'}catch(e){feedback.textContent=e.message}});
+  $('cloudSignOut').addEventListener('click',async()=>{feedback.textContent='Signing out…';try{await cloudRequest({action:'logout'});
+   cloudLoggedIn=false;cloudUsername='';if(cloudSaveTimer)clearTimeout(cloudSaveTimer);cloudSaveTimer=null;cloudSavePending=false;
+   competitionId=createCompetitionId();localStorage.setItem(COMPETITION_ID_KEY,competitionId);
+   account.nickname='';account.fullName='';account.showFullName=false;saveAccount();renderProfile();
+  }catch(e){feedback.textContent=e.message}});
+ }else{
+  const signIn=async action=>{
+   if(modalWasPlaying){feedback.textContent='Finish your current run before switching accounts.';return}
+   const username=$('cloudUser').value.trim(),password=$('cloudPass').value;
+   if(!/^[a-zA-Z0-9_-]{3,18}$/.test(username)||password.length<8){feedback.textContent='Enter a 3–18 character username and a password of at least 8 characters.';return}
+   feedback.textContent=action==='register'?'Creating secure cloud backup…':'Restoring your cloud save…';
+   try{const data=await cloudRequest({action,username,password,playerId:competitionId,profile:account});
+    applyCloudProfile(data);feedback.textContent='✓ Signed in. Your cloud progress is ready.';
+    if(!account.newsSeen)showNewsletterOnce();
+    renderProfile();
+   }catch(e){feedback.textContent=e.message}
+  };
+  $('cloudRegister').addEventListener('click',()=>signIn('register'));
+  $('cloudLogin').addEventListener('click',()=>signIn('login'));
+ }
  $('playerForm').addEventListener('submit',e=>{e.preventDefault();const name=cleanName($('nameInput').value);if(name.length<2){$('profileNote').textContent='Choose at least 2 characters.';return;}account.nickname=name;account.fullName=String($('fullNameInput').value||'').trim().slice(0,48);account.showFullName=$('showFullName').checked&&account.fullName.length>=3;saveAccount();$('profileNote').textContent='Saved! Your public nickname is '+name+'. Your next completed run can appear worldwide.';publishScore(true);});
 }
 function renderBoard(){
