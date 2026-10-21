@@ -684,7 +684,7 @@ function applyCloudProfile(data){
  for(const kind of ['smoke','atmos','car'])if(!account[kind+'Owned'].includes(account[kind+'Equipped']))account[kind+'Equipped']=0;
  if(data.playerId){competitionId=data.playerId;localStorage.setItem(COMPETITION_ID_KEY,competitionId)}
  try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}
- best=Math.max(best,account.verifiedBest||0);bestEl.textContent=String(best).padStart(6,'0');
+ best=account.verifiedBest||0;bestEl.textContent=String(best).padStart(6,'0');try{localStorage.setItem('drift-boss-premium-best',String(best))}catch(e){}
  updateCoinHud();resize();
 }
 async function flushCloudSave(){
@@ -716,10 +716,28 @@ async function restoreCloudAccount(){
  catch(e){console.warn('Cloud account check unavailable',e)}
  finally{showNewsletterOnce()}
 }
+const GUEST_BACKUP_KEY='hamos-guest-before-cloud-v1';
+function backupGuestProfile(){
+ try{localStorage.setItem(GUEST_BACKUP_KEY,JSON.stringify({account,best,competitionId}))}catch(e){}
+}
+function restoreGuestProfile(){
+ let old=null;try{old=JSON.parse(localStorage.getItem(GUEST_BACKUP_KEY)||'null')}catch(e){}
+ if(old?.account&&typeof old.account==='object'){
+  account={...account,...old.account,worldMigrationV3:true};
+  competitionId=/^[0-9a-f-]{36}$/i.test(old.competitionId)?old.competitionId:createCompetitionId();
+  best=Number.isFinite(old.best)?old.best:0;
+ }else{
+  competitionId=createCompetitionId();best=0;
+  account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,worldMigrationV3:true,newsSeen:true};
+ }
+ try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account));localStorage.setItem(COMPETITION_ID_KEY,competitionId);localStorage.setItem('drift-boss-premium-best',String(best))}catch(e){}
+ bestEl.textContent=String(best).padStart(6,'0');updateCoinHud();resize();
+}
 const RELEASE_READ_KEY='hamos-mega-release-read-v1';
 let releasePromptOpen=false;
 function showNewsletterOnce(){
- if(account.newsSeen||(!cloudLoggedIn&&localStorage.getItem(RELEASE_READ_KEY)==='1'))return;
+ let readPreviously=false;try{readPreviously=localStorage.getItem(RELEASE_READ_KEY)==='1'}catch(e){}
+ if(account.newsSeen||(!cloudLoggedIn&&readPreviously))return;
  releasePromptOpen=true;$('releaseNotes').hidden=false;$('releaseRead').checked=false;$('releaseConfirm').disabled=true;
 }
 $('releaseRead').addEventListener('change',()=>{$('releaseConfirm').disabled=!$('releaseRead').checked});
@@ -934,10 +952,11 @@ function renderProfile(){
  const feedback=$('cloudFeedback');
  if(cloudLoggedIn){
   $('cloudSyncNow').addEventListener('click',async()=>{feedback.textContent='Saving…';try{await cloudRequest({action:'save',profile:account});feedback.textContent='✓ Cloud save completed.'}catch(e){feedback.textContent=e.message}});
-  $('cloudSignOut').addEventListener('click',async()=>{feedback.textContent='Signing out…';try{await cloudRequest({action:'logout'});
+  $('cloudSignOut').addEventListener('click',async()=>{if(modalWasPlaying){feedback.textContent='Finish the run before switching accounts.';return}feedback.textContent='Saving and signing out…';try{
+   if(cloudSavePending)await flushCloudSave();
+   await cloudRequest({action:'logout'});
    cloudLoggedIn=false;cloudUsername='';if(cloudSaveTimer)clearTimeout(cloudSaveTimer);cloudSaveTimer=null;cloudSavePending=false;
-   competitionId=createCompetitionId();localStorage.setItem(COMPETITION_ID_KEY,competitionId);
-   account.nickname='';account.fullName='';account.showFullName=false;saveAccount();renderProfile();
+   restoreGuestProfile();renderProfile();
   }catch(e){feedback.textContent=e.message}});
  }else{
   const signIn=async action=>{
@@ -946,7 +965,7 @@ function renderProfile(){
    if(!/^[a-zA-Z0-9_-]{3,18}$/.test(username)||password.length<8){feedback.textContent='Enter a 3–18 character username and a password of at least 8 characters.';return}
    feedback.textContent=action==='register'?'Creating secure cloud backup…':'Restoring your cloud save…';
    try{const data=await cloudRequest({action,username,password,playerId:competitionId,profile:account});
-    applyCloudProfile(data);feedback.textContent='✓ Signed in. Your cloud progress is ready.';
+    backupGuestProfile();applyCloudProfile(data);feedback.textContent='✓ Signed in. Your cloud progress is ready.';
     if(!account.newsSeen)showNewsletterOnce();
     renderProfile();
    }catch(e){feedback.textContent=e.message}
@@ -1085,7 +1104,7 @@ function unlockEverythingWithP(){
  if(toast.hideId)clearTimeout(toast.hideId);
  toast.hideId=setTimeout(()=>toast.classList.remove('visible'),3900);
 }
-function keydown(e){if(modalWrap.classList.contains('open')&&!['Escape'].includes(e.code))return;if(releasePromptOpen){if(e.code==='Space'||e.code==='Enter'||e.code==='ArrowRight')e.stopPropagation();return}if(e.code==='KeyR'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();if(e.repeat)return;if(resetPending){confirmAccountReset()}else showResetWarning();return}if(resetPending||resetBusy)return;if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='KeyP'){e.preventDefault();if(!e.repeat)unlockEverythingWithP();return}if(e.code==='Digit9'||e.code==='Numpad9'){e.preventDefault();if(e.repeat)return;garageFree=!garageFree;if(modalWrap.classList.contains('open'))renderModal();if(garageFree&&state==='menu')openAdminPanel();return}if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();if(e.repeat)return;if(state==='menu'||state==='dead'||state==='finished'){restart();return}else if(state==='paused')resume();held=true}else if(e.code==='Escape'){if(state==='playing')displayOverlay('paused');else if(state==='paused')resume()}}
+function keydown(e){if(modalWrap.classList.contains('open')){if(e.code==='Escape'){e.preventDefault();closeModal()}return;}if(releasePromptOpen){if(e.code==='Space'||e.code==='Enter'||e.code==='ArrowRight')e.stopPropagation();return}if(e.code==='KeyR'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();if(e.repeat)return;if(resetPending){confirmAccountReset()}else showResetWarning();return}if(resetPending||resetBusy)return;if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='KeyP'){e.preventDefault();if(!e.repeat)unlockEverythingWithP();return}if(e.code==='Digit9'||e.code==='Numpad9'){e.preventDefault();if(e.repeat)return;garageFree=!garageFree;if(modalWrap.classList.contains('open'))renderModal();if(garageFree&&state==='menu')openAdminPanel();return}if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();if(e.repeat)return;if(state==='menu'||state==='dead'||state==='finished'){restart();return}else if(state==='paused')resume();held=true}else if(e.code==='Escape'){if(state==='playing')displayOverlay('paused');else if(state==='paused')resume()}}
 function keyup(e){if(resetPending||resetBusy||modalWrap.classList.contains('open'))return;if(e.code==='Space'||e.code==='ArrowRight'){e.preventDefault();held=false}}
 addEventListener('keydown',keydown);addEventListener('keyup',keyup);addEventListener('visibilitychange',()=>{if(document.hidden&&cloudLoggedIn&&cloudSavePending)flushCloudSave()});addEventListener('blur',()=>{held=false;touchHeld=false;if(state==='playing')displayOverlay('paused')});
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();if(releasePromptOpen)return;if(state==='menu'){if(isCarHit(e.clientX,e.clientY)){openModal('profile');return}restart();return}else if(state==='dead'||state==='finished')restart();else if(state==='paused')resume();touchHeld=true});addEventListener('pointerup',()=>touchHeld=false);addEventListener('pointercancel',()=>touchHeld=false);
