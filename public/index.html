@@ -179,7 +179,7 @@ let camera=null,camX=0,camZ=0,camInitialized=false,last=0,accumulator=0,screenSh
 
 
 
-let tracks=[],ramps=[],bananas=[],boundary=[],smoke=[],skidClock=0,streak=0,coins=[],coinBursts=[],coinCount=0,carTier=0,upgradeFlash=0,lastBranchTurn=-100,lastRampTurn=-20,routeKind='normal',branches=[],redSeeded=false,orangeSeeded=false,loops=[],activeLoop=null,loopBonusTime=0,greenDriftTime=0,greenBranchId=null,greenRewardFlash=0,greenDriftAwarded=new Set(),greenDriftGrace=0,bananaSpinTime=0,bananaSpinAngle=0,bananaSpinCount=0;
+let tracks=[],ramps=[],bananas=[],boundary=[],smoke=[],skidClock=0,streak=0,coins=[],coinBursts=[],coinCount=0,carTier=0,upgradeFlash=0,lastBranchTurn=-100,lastRampTurn=-20,routeKind='normal',branches=[],redSeeded=false,orangeSeeded=false,purpleSeeded=false,purpleAwarded=new Set(),loops=[],activeLoop=null,loopBonusTime=0,greenDriftTime=0,greenBranchId=null,greenRewardFlash=0,greenDriftAwarded=new Set(),greenDriftGrace=0,bananaSpinTime=0,bananaSpinAngle=0,bananaSpinCount=0;
 
 // Shop currencies are permanent (earned coins across all runs); run coins still buy car upgrades.
 const DB_SAVE_KEY='drift-boss-ultimate-profile-v1';
@@ -403,7 +403,7 @@ function addRoadRun(sx,sz,dir,length,width,style,startS,kind='road'){
 function generateBranch(kind){
  const sx=gen.x,sz=gen.z,s0=gen.s,dir=gen.dir,other=dir==='z'?'x':'z';
  const lengthA=random(67,82),lengthB=random(42,51);
- const normalW=18.1,width=kind==='green'?35.0:kind==='orange'?23.5:18.5;
+ const normalW=18.1,width=kind==='green'?35.0:kind==='orange'?23.5:kind==='purple'?22:18.5;
  // The usual neon path bends one way; the colorful alternative bends the opposite way.
  let m1=addRoadRun(sx,sz,dir,lengthA,normalW,'plain',s0);
  let m2=addRoadRun(m1.x,m1.z,other,lengthB,normalW,'plain',s0+lengthA);
@@ -414,6 +414,7 @@ function generateBranch(kind){
  let b1=addRoadRun(sx,sz,other,lengthB,width,'branch-'+kind,s0,'branch-'+kind);
  let b2=addRoadRun(b1.x,b1.z,dir,lengthA,width,'branch-'+kind,s0+lengthB,'branch-'+kind);
  if(kind==='green')for(let i=firstBranchTile;i<tiles.length;i++)tiles[i].greenBranchId=s0;
+ if(kind==='purple')for(let i=firstBranchTile;i<tiles.length;i++)tiles[i].purpleBranchId=s0;
  if(kind!=='orange'){
   addBranchCoins(sx,sz,other,lengthB,s0,kind);
   addBranchCoins(b1.x,b1.z,dir,lengthA,s0+lengthB,kind);
@@ -427,16 +428,17 @@ function generateBranch(kind){
  tiles.push(tile(m2.x-r,m2.z-r,m2.x+r,m2.z+r,s0+lengthA+lengthB-1,s0+lengthA+lengthB+1,'corner','junction','corner'));
  branches.push({kind,startS:s0,endS:s0+lengthA+lengthB,from:{x:sx,z:sz},to:{x:m2.x,z:m2.z}});
  gen.x=m2.x;gen.z=m2.z;gen.s=s0+lengthA+lengthB;gen.turn+=2;gen.dir=dir;
- lastBranchTurn=gen.turn;if(kind==='red')redSeeded=true;if(kind==='orange')orangeSeeded=true;
+ lastBranchTurn=gen.turn;if(kind==='red')redSeeded=true;if(kind==='orange')orangeSeeded=true;if(kind==='purple')purpleSeeded=true;
 }
 function generateRun(){
  const firstGreen=gen.turn===5;
  const firstRed=!redSeeded&&gen.turn>=15&&gen.turn-lastBranchTurn>=8;
+ const firstPurple=!purpleSeeded&&gen.turn>=10&&gen.turn-lastBranchTurn>=6;
  // The orange course is intentionally rarer than both existing detours.
  const firstOrange=!orangeSeeded&&gen.turn>=33&&gen.turn-lastBranchTurn>=10;
  const occasional=gen.turn>8&&gen.turn-lastBranchTurn>=9&&rnd()<.095;
- if(firstGreen || firstRed || firstOrange || occasional){
-  const kind=firstGreen?'green':firstRed?'red':firstOrange?'orange':(rnd()<.10?'orange':rnd()<.54?'red':'green');
+ if(firstGreen || firstRed || firstPurple || firstOrange || occasional){
+  const kind=firstGreen?'green':firstRed?'red':firstPurple?'purple':firstOrange?'orange':(rnd()<.08?'orange':rnd()<.28?'purple':rnd()<.56?'red':'green');
   generateBranch(kind);return;
  }
  let first=gen.turn===0,dir=gen.dir;
@@ -842,7 +844,7 @@ async function initOnlineLeaderboard(){
  catch(e){boardStatus='OFFLINE PREVIEW · Publish the Netlify Functions to activate global scores.';onlineNoticeEl.textContent='ONLINE LEADERBOARD NOT CONNECTED';console.warn('Leaderboard not yet connected:',e)}
 }
 
-function prepareRoad(){seed=765239;fxSeed=318791;tiles=[];runs=[];ramps=[];bananas=[];coins=[];branches=[];loops=[];activeLoop=null;orangeSeeded=false;lastBranchTurn=-100;lastRampTurn=-20;redSeeded=false;gen={x:0,z:0,dir:'z',turn:0,s:0};progress=0;generateRun();extendRoad(roadAhead)}
+function prepareRoad(){seed=765239;fxSeed=318791;tiles=[];runs=[];ramps=[];bananas=[];coins=[];branches=[];loops=[];activeLoop=null;orangeSeeded=false;purpleSeeded=false;purpleAwarded.clear();lastBranchTurn=-100;lastRampTurn=-20;redSeeded=false;gen={x:0,z:0,dir:'z',turn:0,s:0};progress=0;generateRun();extendRoad(roadAhead)}
 function restart(){
  if(resetPending||resetBusy)return;
  carTier=0;prepareRoad();player={x:0,z:7,y:0,vx:0,vz:40,vy:0,heading:0,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};
@@ -957,7 +959,7 @@ function greenBranchAt(x,z){
  return null;
 }
 function routeAt(x,z){
- for(let i=tiles.length-1;i>=0;i--){const t=tiles[i];if(t.kind!=='branch-red'&&t.kind!=='branch-green'&&t.kind!=='branch-orange')continue;if(within(t,x,z,.22))return t.kind==='branch-green'?'green':t.kind==='branch-red'?'red':'orange'}
+ for(let i=tiles.length-1;i>=0;i--){const t=tiles[i];if(t.kind!=='branch-red'&&t.kind!=='branch-green'&&t.kind!=='branch-orange'&&t.kind!=='branch-purple')continue;if(within(t,x,z,.22))return t.kind==='branch-green'?'green':t.kind==='branch-red'?'red':t.kind==='branch-purple'?'purple':'orange'}
  return 'normal';
 }
 function tyreSupport(x,z,heading){
@@ -1123,9 +1125,12 @@ function update(dt){
 
  const raceFromX=player.x,raceFromZ=player.z;
  routeKind=routeAt(player.x,player.z);
+ if(routeKind==='purple'){const pTile=tiles.find(t=>t.kind==='branch-purple'&&within(t,player.x,player.z,.2));if(pTile&&!purpleAwarded.has(pTile.purpleBranchId)){purpleAwarded.add(pTile.purpleBranchId);collectCoin(15);level.textContent='PURPLE TURBO · +50% SPEED · +15 BOLTS';level.style.color='#d39aff';}}
+
  const turnRight=held||touchHeld,target=turnRight?1:0;
  const performanceTier=Math.min(carTier,9);
  let speed=carSpeed();
+ if(routeKind==='purple')speed*=1.5;
  if(player.boost>0){player.boost=Math.max(0,player.boost-dt*.9);speed*=1+.22*player.boost;}
  if(player.wasRight!==turnRight){
    driftLeft=routeKind==='green'?2.44:1.22;screenShake=.08;player.wasRight=turnRight;playDriftSound();
@@ -1234,8 +1239,8 @@ function update(dt){
  syncScore(dt,raceFromX,raceFromZ,speed);
  // Progress now tracks green-road time only, independent of the car's drift.
  updateGreenStay(dt);
- level.textContent=loopBonusTime>0?'LOOP COMPLETE  ·  +15 COINS':routeKind==='green'?'GREEN ROUTE  ·  STAY 0.5s':routeKind==='red'?'RED ROUTE  ·  5-COIN TRAILS':routeKind==='orange'?'ORANGE ROUTE  ·  LOOP +15':'';
- level.style.color=loopBonusTime>0||routeKind==='orange'?'#ffba67':routeKind==='green'?'#9bffbf':routeKind==='red'?'#ff8795':'#b5cedfb0';
+ level.textContent=loopBonusTime>0?'LOOP COMPLETE  ·  +15 COINS':routeKind==='green'?'GREEN ROUTE  ·  STAY 0.5s':routeKind==='red'?'RED ROUTE  ·  5-COIN TRAILS':routeKind==='orange'?'ORANGE ROUTE  ·  LOOP +15':routeKind==='purple'?'PURPLE TURBO · +50% SPEED · +15 BOLTS':'';
+ level.style.color=loopBonusTime>0||routeKind==='orange'?'#ffba67':routeKind==='green'?'#9bffbf':routeKind==='red'?'#ff8795':routeKind==='purple'?'#cf8cff':'#b5cedfb0';
  updateProgress();collectNearbyCoins();collectNearbyBananas();updateBest();
  for(let i=coinBursts.length-1;i>=0;i--){coinBursts[i].life-=dt;if(coinBursts[i].life<=0)coinBursts.splice(i,1)}
  if(upgradeFlash>0){upgradeFlash=Math.max(0,upgradeFlash-dt);if(upgradeFlash===0)upgradeToast.classList.remove('visible')}
@@ -1303,6 +1308,10 @@ function drawSpecialRoadTint(){
  if(!visible)return;
  // Use a very slight neutral darkening so atmosphere palettes still show through.
  roadTintCtx.fillStyle='rgba(5,8,14,.145)';roadTintCtx.fill();
+ // Purple turbo branch is differentiated by a translucent violet overlay.
+ roadTintCtx.beginPath();let violet=false;
+ for(const t of tiles){if(t.kind!=='branch-purple'||t.x0-camX>195||t.x1-camX< -195||t.z0-camZ>195||t.z1-camZ< -195)continue;violet=appendPolygon([vec(t.x0,.021,t.z0),vec(t.x1,.021,t.z0),vec(t.x1,.021,t.z1),vec(t.x0,.021,t.z1)],roadTintCtx)||violet;}
+ if(violet){roadTintCtx.fillStyle='rgba(103,26,168,.40)';roadTintCtx.fill();}
  // Fade the shade out around each entry/exit. This changes only the tint mask,
  // not the original road surface or its differently coloured neon rails.
  roadTintCtx.globalCompositeOperation='destination-out';
@@ -1354,7 +1363,7 @@ function drawRoad(){
    segment(A,B,base+'40',6.5);segment(A,B,base,2.6);
   }else{
    const kind=e.kind.slice(7),b=branches.find(v=>v.kind===kind&&Math.min(Math.hypot(A.x-v.from.x,A.z-v.from.z),Math.hypot(B.x-v.from.x,B.z-v.from.z),Math.hypot(A.x-v.to.x,A.z-v.to.z),Math.hypot(B.x-v.to.x,B.z-v.to.z))<v.endS-v.startS+75);
-   const neon=kind==='red'?'#ff4779':kind==='green'?'#72ff8f':'#ff9a43';
+   const neon=kind==='red'?'#ff4779':kind==='green'?'#72ff8f':kind==='purple'?'#bb55ff':'#ff9a43';
    function edgeColour(p){if(!b)return neon;const dist=Math.min(Math.hypot(p.x-b.from.x,p.z-b.from.z),Math.hypot(p.x-b.to.x,p.z-b.to.z));const q=clamp(dist/22,0,1);return mixHex(base,neon,q*q*(3-2*q))}
    const cA=edgeColour(A),cB=edgeColour(B);
    gradientSegment(A,B,cA+'45',cB+'45',7);
@@ -1365,7 +1374,7 @@ function drawRoad(){
  // Center dashes do not collide and don't cover up cross-piece transitions.
  for(const r of runs){
   const D=Math.floor(r.length/11);
-  const dash=r.type==='branch-red'?mixHex(activeTheme().neon[1],'#ff667b',.7)+'66':r.type==='branch-green'?mixHex(activeTheme().neon[0],'#7effaf',.65)+'66':r.type==='branch-orange'?mixHex(activeTheme().neon[0],'#ffac56',.7)+'66':activeTheme().neon[0]+'5c';
+  const dash=r.type==='branch-red'?mixHex(activeTheme().neon[1],'#ff667b',.7)+'66':r.type==='branch-green'?mixHex(activeTheme().neon[0],'#7effaf',.65)+'66':r.type==='branch-orange'?mixHex(activeTheme().neon[0],'#ffac56',.7)+'66':r.type==='branch-purple'?'#d1a0ff90':activeTheme().neon[0]+'5c';
   const width=r.type.startsWith('branch-')?1.7:1.25;
   for(let i=0;i<D;i++){
    const f=(i+.22)*r.length/D,e=(i+.52)*r.length/D;
@@ -1452,10 +1461,10 @@ function drawCoins(){
   let r=clamp(camera.zoom/p.depth*(large?1.45:.87),2,large?49:36);
   const spin=.22+.78*Math.abs(Math.cos(time*3.0+c.phase)),rx=Math.max(1.3,r*spin);
   ctx.fillStyle=large?'#ff465950':'#ffd23a2e';ctx.beginPath();ctx.ellipse(p.x,p.y,rx+(large?10:5),r+(large?10:5),0,0,TAU);ctx.fill();
-  ctx.fillStyle=large?'#ff9452':'#f3a91f';ctx.beginPath();ctx.ellipse(p.x,p.y,rx,r,0,0,TAU);ctx.fill();
-  ctx.fillStyle=large?'#fff4a4':'#ffe573';ctx.beginPath();ctx.ellipse(p.x-rx*.12,p.y,rx*.79,r*.87,0,0,TAU);ctx.fill();
+  ctx.fillStyle=large?'#ff9452':'#b8c6db';ctx.beginPath();for(let n=0;n<12;n++){let a=n*TAU/12,rad=(n%2?r*.84:r)*spin;const x=p.x+Math.cos(a)*rad,y=p.y+Math.sin(a)*r*(n%2?.87:1);if(!n)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();ctx.fill();
+  ctx.fillStyle=large?'#fff4a4':'#60748c';ctx.beginPath();ctx.ellipse(p.x-rx*.12,p.y,rx*.48,r*.52,0,0,TAU);ctx.fill();
   ctx.strokeStyle='#fff9bd';ctx.lineWidth=Math.max(1,r*.12);ctx.beginPath();ctx.ellipse(p.x,p.y,rx*.73,r*.76,0,0,TAU);ctx.stroke();
-  if(spin>.45&&r>6){ctx.fillStyle='#985218';ctx.font='900 '+Math.round(r*(large?.95:.8))+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(large?'5':'★',p.x,p.y+1)}
+  if(spin>.45&&r>6){ctx.fillStyle='#985218';ctx.font='900 '+Math.round(r*(large?.95:.8))+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(large?'15':'⬡',p.x,p.y+1)}
  }
 }
 function local(x,y,z){
@@ -1471,7 +1480,7 @@ function local(x,y,z){
  const si=Math.sin(displayHeading),co=Math.cos(displayHeading);
  return vec(player.x+co*xr+si*zp,yp+player.y,player.z-si*xr+co*zp);
 }
-function drawCar(){let faces=[];const cs=currentStyle();const rank=Math.min(carTier,6),bodyW=1+rank*.025,bodyL=1+rank*.035,bodyH=1-rank*.025;
+function drawCar(){let faces=[];const cs=currentStyle(),vehicle=selectedCar(),kind=vehicle.type;const bodyW=1,bodyL=1,bodyH=1;
 function face(points,color){let pts=points.map(v=>local(v[0]*bodyW,v[1]*bodyH,v[2]*bodyL));let depth=0;for(let p of pts)depth+=(p.x-camera.eye.x)*camera.forward.x+(p.y-camera.eye.y)*camera.forward.y+(p.z-camera.eye.z)*camera.forward.z;faces.push({pts,color,depth:depth/pts.length})}
 function box(x0,x1,y0,y1,z0,z1,colors){let [top,left,right,front,back]=colors;
 face([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]],top);
@@ -1479,23 +1488,56 @@ face([[x0,y0,z0],[x0,y1,z0],[x0,y1,z1],[x0,y0,z1]],left);
 face([[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],[x1,y0,z0]],right);
 face([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],front);
 face([[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0]],back)}
-if(player.y>=0&&onRoad(player.x,player.z)){poly([vec(player.x-1.5,.025,player.z-2.9),vec(player.x+1.5,.025,player.z-2.9),vec(player.x+1.5,.025,player.z+2.9),vec(player.x-1.5,.025,player.z+2.9)],player.airborne?'#03051b47':'#03051b70')}
+if(player.y>=0&&onRoad(player.x,player.z)){
+ // Footprint rotates with the displayed model but remains projected on the road.
+ const h=state==='menu'?menuYaw:player.heading+(activeLoop?0:bananaSpinAngle),co=Math.cos(h),si=Math.sin(h);
+ const shadow=(x,z)=>vec(player.x+co*x+si*z,.025,player.z-si*x+co*z);
+ poly([shadow(-1.5,-2.9),shadow(1.5,-2.9),shadow(1.5,2.9),shadow(-1.5,2.9)],player.airborne?'#03051b47':'#03051b70');
+}
 for(let zz of [-1.4,1.4])for(let xx of [-1.34,1.34])box(xx-.26,xx+.26,.15,.88,zz-.7,zz+.7,['#0b111c','#08101a','#182238','#111c2e','#050912']);
 box(-1.23,1.23,.43,1.18,-2.23,2.25,cs.paint);face([[-1.02,1.17,-1.00],[1.02,1.17,-1.00],[.84,1.91,-.64],[-.84,1.91,-.64]],'#123350');
 face([[1.02,1.17,1.08],[-1.02,1.17,1.08],[-.84,1.91,.69],[.84,1.91,.69]],'#174968');
 face([[-1.02,1.17,-1.00],[-.84,1.91,-.64],[-.84,1.91,.69],[-1.02,1.17,1.08]],'#18678d');
 face([[1.02,1.17,1.08],[.84,1.91,.69],[.84,1.91,-.64],[1.02,1.17,-1.00]],'#08669a');
 face([[-.84,1.92,-.64],[.84,1.92,-.64],[.84,1.92,.69],[-.84,1.92,.69]],cs.roof);
-if(carTier>=2){face([[-.20,1.187,1.15],[.20,1.187,1.15],[.20,1.187,2.06],[-.20,1.187,2.06]],cs.trim);face([[-.15,1.195,-2.08],[.15,1.195,-2.08],[.15,1.195,-1.24],[-.15,1.195,-1.24]],cs.trim)}
-if(carTier>=3){box(-1.38,1.38,1.39,1.53,-2.69,-2.4,[cs.trim,cs.paint[1],cs.paint[2],cs.paint[1],cs.paint[4]]);box(-1.04,-.84,1.12,1.47,-2.53,-2.34,cs.paint);box(.84,1.04,1.12,1.47,-2.53,-2.34,cs.paint)}
-if(carTier>=4){face([[-1.23,1.18,1.4],[-.78,1.18,1.4],[-.78,1.18,1.72],[-1.23,1.18,1.72]],'#071e3b');face([[.78,1.18,1.4],[1.23,1.18,1.4],[1.23,1.18,1.72],[.78,1.18,1.72]],'#071e3b')}
-if(carTier>=5){box(-.18,.18,1.84,2.06,-.73,.55,[cs.trim,cs.paint[1],cs.paint[2],cs.paint[1],cs.paint[4]])}
+if(['rally','gt','phantom','tokyo','formula','hyper','lambo'].includes(kind)){face([[-.20,1.187,1.15],[.20,1.187,1.15],[.20,1.187,2.06],[-.20,1.187,2.06]],cs.trim);face([[-.15,1.195,-2.08],[.15,1.195,-2.08],[.15,1.195,-1.24],[-.15,1.195,-1.24]],cs.trim)}
+if(['rally','gt','phantom','tokyo','formula','hyper','lambo'].includes(kind)){box(-1.38,1.38,1.39,1.53,-2.69,-2.4,[cs.trim,cs.paint[1],cs.paint[2],cs.paint[1],cs.paint[4]]);box(-1.04,-.84,1.12,1.47,-2.53,-2.34,cs.paint);box(.84,1.04,1.12,1.47,-2.53,-2.34,cs.paint)}
+if(['phantom','tokyo','formula','hyper','lambo'].includes(kind)){face([[-1.23,1.18,1.4],[-.78,1.18,1.4],[-.78,1.18,1.72],[-1.23,1.18,1.72]],'#071e3b');face([[.78,1.18,1.4],[1.23,1.18,1.4],[1.23,1.18,1.72],[.78,1.18,1.72]],'#071e3b')}
+if(['formula','hyper','lambo'].includes(kind)){box(-.18,.18,1.84,2.06,-.73,.55,[cs.trim,cs.paint[1],cs.paint[2],cs.paint[1],cs.paint[4]])}
 box(-1.33,1.33,1.35,1.50,-2.52,-2.24,['#112e42','#111f30','#154963','#18374c','#16364a']);
 box(-1.04,-.58,.82,1.1,-2.34,-2.22,['#ff9ca4','#fc3d62','#ff5273','#ff4d68','#ff526c']);
 box(.58,1.04,.82,1.1,-2.34,-2.22,['#ff9ca4','#fc3d62','#ff5273','#ff4d68','#ff526c']);
 box(-1.04,-.58,.82,1.1,2.23,2.34,['#fff2c7','#e1ffff','#feffff','#ffffff','#8ff0ff']);
 box(.58,1.04,.82,1.1,2.23,2.34,['#fff2c7','#e1ffff','#feffff','#ffffff','#8ff0ff']);
+// Distinct silhouette upgrades belong to purchased cars only, never engine levels.
+if(kind==='truck'){
+ box(-1.37,1.37,.65,2.28,-2.85,.38,[cs.paint[0],cs.paint[1],cs.paint[2],cs.paint[3],cs.paint[4]]);
+ box(-1.25,1.25,.68,2.10,.39,2.72,[cs.accent||'#ffe872','#27865b','#4aca75','#2a8f59','#165e40']);
+ for(const z of [-2.5,-1.8,-1.1])box(-1.42,1.42,2.29,2.36,z,z+.14,['#fce166','#151e26','#fce166','#fce166','#fce166']);
+}
+if(kind==='bus'){
+ box(-1.26,1.26,.51,2.46,-3.85,3.65,[cs.paint[0],'#d6a22e','#ffe57a','#edb735','#da8d1f']);
+ box(-1.20,1.20,2.46,2.57,-3.8,3.6,[cs.trim,cs.paint[1],cs.paint[2],cs.paint[3],cs.paint[4]]);
+ for(const z of [-2.65,-1.45,-.25,.95,2.1])for(const x of [-1.27,1.27])box(x-.03,x+.03,1.39,2.16,z,z+.86,['#7eebff','#124965','#197b95','#193e55','#0d3548']);
+ box(-1.23,1.23,1.30,2.20,3.67,3.72,['#164e66','#0c3545','#1a7287','#12495b','#235b79']);
+ box(-1.20,1.20,1.14,1.32,3.72,3.79,['#132c41','#12283b','#173449','#183447','#152e3b']);
+}
+if(kind==='rally'){for(let x of [-.80,.80])box(x-.23,x+.23,1.91,2.12,.34,.98,['#ffe798','#b14a1f','#ffdd80','#fae6ab','#c6532c']);}
+if(kind==='gt'||kind==='tokyo'||kind==='phantom'){box(-1.27,1.27,.44,.64,-2.58,-2.29,[cs.trim,cs.paint[1],cs.paint[2],cs.paint[3],cs.paint[4]]);}
+if(kind==='tokyo'){
+ for(let x of [-.47,.47])box(x-.20,x+.20,1.2,1.25,1.55,2.28,['#ff52c7','#f8b0ff','#ee40cb','#fff2fb','#f14ac3']);
+ box(-1.52,1.52,1.64,1.86,-2.85,-2.52,['#ff4ff0','#632384','#ff9bf8','#8b33a7','#632384']);
+}
+if(kind==='formula'){box(-1.58,1.58,.65,.81,2.15,2.61,['#ffecc0','#951923','#ff5c61','#fca0a5','#6f1820']);box(-1.53,1.53,.81,.96,-2.84,-2.46,['#ffecc0','#951923','#ff5c61','#fca0a5','#6f1820']);box(-.62,.62,1.88,2.00,-.44,.36,[cs.trim,cs.paint[1],cs.paint[2],cs.paint[3],cs.paint[4]]);}
+if(kind==='hyper'||kind==='lambo'){box(-1.35,1.35,.37,.63,1.70,2.52,[cs.trim,cs.paint[1],cs.paint[2],cs.paint[3],cs.paint[4]]);}
+if(kind==='lambo'){
+ for(let x of [-1.12,1.12]){box(x-.16,x+.16,.47,.64,1.80,2.7,['#14271b','#14271b','#c8ff73','#a5ff31','#182a15']);}
+ box(-1.58,1.58,1.29,1.53,-3.08,-2.65,['#d7ff69','#2d5f16','#8ffc48','#efffc6','#395c23']);
+ box(-1.13,-.84,1.1,1.65,-2.78,-2.41,['#baff72','#2b651a','#c9ff89','#8ed834','#376b13']);
+ box(.84,1.13,1.1,1.65,-2.78,-2.41,['#baff72','#2b651a','#c9ff89','#8ed834','#376b13']);
+}
 faces.sort((a,b)=>b.depth-a.depth);for(const f of faces)poly(f.pts,f.color);
+if(kind==='bus'){const p=project(local(0,2.03,3.76));if(p&&p.depth>0){ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='1000 '+Math.max(10,Math.min(28,camera.zoom/p.depth*.36))+'px system-ui';ctx.fillStyle='#fff4a7';ctx.fillText('44',p.x,p.y)}}
 segment(local(-1.04,1.07,-2.36),local(-.57,1.07,-2.36),'#ff667e',3.1);segment(local(.57,1.07,-2.36),local(1.04,1.07,-2.36),'#ff667e',3.1);
 }
 
