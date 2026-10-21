@@ -725,7 +725,7 @@ function showNewsletterOnce(){
 $('releaseRead').addEventListener('change',()=>{$('releaseConfirm').disabled=!$('releaseRead').checked});
 $('releaseConfirm').addEventListener('click',()=>{if(!$('releaseRead').checked)return;
  account.newsSeen=true;try{localStorage.setItem(RELEASE_READ_KEY,'1')}catch(e){}
- saveAccount();releasePromptOpen=false;$('releaseNotes').hidden=true;
+ saveAccount();if(cloudLoggedIn)flushCloudSave();releasePromptOpen=false;$('releaseNotes').hidden=true;
 });
 $('releaseCopy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText('https://hamosdriftboss.netlify.app');$('releaseCopy').textContent='✓ LINK COPIED!'}catch(e){$('releaseCopy').textContent='Share: hamosdriftboss.netlify.app'}});
 
