@@ -281,21 +281,28 @@ for(const kind of ['smoke','atmos']){
 account.achievementClaims=Array.isArray(account.achievementClaims)?account.achievementClaims:[];account.achievementCounts={loops:0,bananas:0,green:0,red:0,...(account.achievementCounts||{})};
 const cleanName=name=>String(name||'').trim().replace(/[^a-zA-Z0-9 _-]/g,'').replace(/\s{2,}/g,' ').slice(0,18);
 account.nickname=cleanName(account.nickname);
+// Retain legacy garage ownership and translate legacy single drift into a per-car setup.
+account.carSmoke=Array.isArray(account.carSmoke)&&account.carSmoke.length===10
+ ?account.carSmoke.map(v=>Number.isInteger(v)&&v>=0&&v<20?v:0)
+ :Array(10).fill(Number.isInteger(account.smokeEquipped)?account.smokeEquipped:0);
+function syncCarSmoke(){const index=account.carEquipped||0;const trail=account.carSmoke[index]||0;account.smokeEquipped=account.smokeOwned.includes(trail)?trail:0}
+syncCarSmoke();
 function saveAccount(){try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}scheduleCloudSave();}
 function activeTheme(){const idx=(state==='menu'&&modalWrap?.classList.contains('open')?previewAtmosIndex:null)??account.atmosEquipped;return ALL_THEMES[idx]||ATMOSPHERES[0]}
 function activeSmoke(){return ALL_SMOKES[account.smokeEquipped]||SMOKE_OPTIONS[0]}
+function equippedSmokeForCar(){return account.carSmoke[account.carEquipped]||0}
 function shopEarn(amount){account.wallet+=amount;saveAccount();}
 const GARAGE_CARS=[
 {name:'STREET HATCH',price:0,type:'hatch',color:'#ff5cbb',accent:'#fff0ff',desc:'Your original free starter. Classic and clean.'},
-{name:'GARBAGE TRUCK',price:5000,type:'truck',color:'#42bd6b',accent:'#f3df57',desc:'Heavy-duty green refuse truck with hazard stripes.'},
-{name:'RALLY BEAST',price:10000,type:'rally',color:'#ff6c3c',accent:'#ffe26a',desc:'Wide rally racer with spotlights and roof scoop.'},
-{name:'NEON GT-R',price:20000,type:'gt',color:'#17d9ef',accent:'#dbfaff',desc:'Low-slung street icon with aero styling.'},
+{name:'RALLY BEAST',price:5000,type:'rally',color:'#f64a39',accent:'#ffe49a',desc:'Rugged rally car with spotlights, flares and roof scoop.'},
+{name:'DRIFT PATROL',price:10000,type:'police',color:'#effaff',accent:'#56bcff',desc:'Police pursuit car with animated blue and red roof lights.'},
+{name:'MONSTER WHEELS',price:20000,type:'monster',color:'#e84231',accent:'#9ed9ff',desc:'Monster truck lifted high over four giant tyres.'},
 {name:'DUBLIN BUS 44',price:40000,type:'bus',color:'#f4be35',accent:'#1694a8',desc:'The legendary 44 route. Destination: DRIFT CITY.'},
 {name:'MIDNIGHT PHANTOM',price:80000,type:'phantom',color:'#26253d',accent:'#bc9dff',desc:'Stealth black-violet widebody with aggressive details.'},
 {name:'TOKYO DRIFT',price:160000,type:'tokyo',color:'#f4e7ff',accent:'#ff51ce',desc:'Japanese drift machine: cherry-pink neon, race stripes and huge wing.'},
-{name:'APEX FORMULA',price:320000,type:'formula',color:'#e64b55',accent:'#ffeec0',desc:'Open-cockpit prototype with aerodynamic wings.'},
-{name:'SOLAR HYPERCAR',price:640000,type:'hyper',color:'#ffbb3f',accent:'#fff7c0',desc:'Golden exotic with a razor-sharp profile.'},
-{name:'LAMBORGHINI DRIFT KING',price:1280000,type:'lambo',color:'#8dff4d',accent:'#e6ffb8',desc:'Ultra-low Italian-inspired drifting supercar: carbon aero, neon details and a colossal wing.'}
+{name:'GRAND PRIX F1',price:320000,type:'formula',color:'#127aff',accent:'#adf6ff',desc:'Formula racer with sleek wings and blue energy orb pickups.'},
+{name:'TWIN RACERS',price:640000,type:'double',color:'#79ff34',accent:'#e8ffb4',desc:'Two-car racing team with a natural-moving blue partner.'},
+{name:'LAMBORGHINI DRIFT KING',price:1280000,type:'lambo',color:'#202a37',accent:'#b9d7ff',desc:'Black futuristic carbon supercar with angular aero and sharp white LEDs.'}
 ];
 function selectedCar(){return GARAGE_CARS[account.carEquipped]||GARAGE_CARS[0]}
 let usedAssistThisRun=false,modalWasPlaying=false,modalPage='shop',shopTab='cars',previewSmokeIndex=null,previewAtmosIndex=null,garageFree=false,globalBoard=[],boardStatus='Connecting to worldwide leaderboard…',onlineApi=null,lastOnlineScoreSent=0,onlineBusy=false;
@@ -733,11 +740,11 @@ function restoreGuestProfile(){
  try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account));localStorage.setItem(COMPETITION_ID_KEY,competitionId);localStorage.setItem('drift-boss-premium-best',String(best))}catch(e){}
  bestEl.textContent=String(best).padStart(6,'0');updateCoinHud();resize();
 }
-const RELEASE_READ_KEY='hamos-mega-release-read-v1';
+const RELEASE_READ_KEY='hamos-motorsport-update-read-v2';
 let releasePromptOpen=false;
 function showNewsletterOnce(){
  let readPreviously=false;try{readPreviously=localStorage.getItem(RELEASE_READ_KEY)==='1'}catch(e){}
- if(account.newsSeen||(!cloudLoggedIn&&readPreviously))return;
+ if(readPreviously)return;
  releasePromptOpen=true;$('releaseNotes').hidden=false;$('releaseRead').checked=false;$('releaseConfirm').disabled=true;
 }
 $('releaseRead').addEventListener('change',()=>{$('releaseConfirm').disabled=!$('releaseRead').checked});
@@ -847,15 +854,13 @@ function renderModal(){
  if(modalPage==='board')renderBoard();if(modalPage==='achievements')renderAchievements();if(modalPage==='admin')renderAdmin();
 }
 const ACH=[
-['First 2K','score',2000,'smoke','Dirt Trail'],['First 5K','score',5000,'smoke','Red Trail'],['First 15K','score',15000,'atmos','Dark Mode'],['First 20K','score',20000,'coins',45000],
-['First 23K','score',23000,'smoke','Fire Trail'],['First 25K','score',25000,'smoke','Music Trail'],['First 28K','score',28000,'coins',100000],['First 30K','score',30000,'atmos','Tokyo'],['First 32K','score',32000,'smoke','Fishing Rod & Fish'],['First 35K','score',35000,'coins',300000],['First 38K','score',38000,'smoke','Blackout Void'],['First 40K','score',40000,'coins',500000],
+['First 2K','score',2000,'smoke','Dirt Trail'],['First 5K','score',5000,'smoke','Red Trail'],['First 15K','score',15000,'coins',20000],['First 20K','score',20000,'coins',45000],
+['First 23K','score',23000,'smoke','Fire Trail'],['First 25K','score',25000,'smoke','Music Trail'],['First 28K','score',28000,'coins',100000],['First 30K','score',30000,'coins',200000],['First 32K','score',32000,'smoke','Fishing Rod & Fish'],['First 35K','score',35000,'coins',300000],['First 38K','score',38000,'smoke','Blackout Void'],['First 40K','score',40000,'coins',500000],
 ['25 Loops','loops',25,'smoke','Rollercoaster Tracks'],['300 Bananas','bananas',300,'smoke','Banana Trail'],['150 Green Drifts','green',150,'smoke','Slushie Drift'],['300 Red Pickups','red',300,'smoke','Money Trail']];
 const BONUS_SMOKE=['Dirt Trail','Red Trail','Fire Trail','Music Trail','Fishing Rod & Fish','Blackout Void','Rollercoaster Tracks','Banana Trail','Slushie Drift','Money Trail'];
 const BONUS_COLORS=['#a58965','#ff2e51','#ff8522','#935cff','#4fdbff','#05040b','#f8ce63','#ffe25c','#45e8ff','#38f58b'];
 const ALL_SMOKES=[...SMOKE_OPTIONS,...BONUS_SMOKE.map((name,i)=>[name,0,'Achievement-exclusive '+name,'rgba(196,215,244,','rgba(238,242,255,',6,1.1,1,820])];
-const BONUS_THEMES=[
-{name:'Dark Mode',price:0,desc:'Minimal dark asphalt and near-black sky',bg:['#020306','#090b10','#181b22','#020305'],glow:['#556174','#9aacc0'],deck:['#10131a','#1b2029','#101219'],neon:['#8092a8','#5d697b']},
-{name:'Tokyo',price:0,desc:'Tokyo-inspired neon streets, pink, violet and cyan',bg:['#06051b','#32105a','#ad1c6c','#070a22'],glow:['#ff4bac','#40f6ff'],deck:['#221e48','#48276b','#1b3750'],neon:['#ff72c1','#43fcf5']}];
+const BONUS_THEMES=[]; // The former 15K/30K exclusive worlds have become coin rewards.
 const ALL_THEMES=[...ATMOSPHERES,...BONUS_THEMES];
 function achProgress(a){return a[1]==='score'?Math.max(best,account.verifiedBest):Number(account.achievementCounts[a[1]])||0}
 function claimAchievement(i){const a=ACH[i];if(!a||account.achievementClaims.includes(i)||(!garageFree&&achProgress(a)<a[2]))return;
@@ -895,33 +900,31 @@ function renderAchievements(){
 function smokeSalePrice(i){const original=ALL_SMOKES[i]?.[1]||0;return i>=6&&i<SMOKE_OPTIONS.length?Math.floor(original*.65):i>0&&i<SMOKE_OPTIONS.length?Math.floor(original*.8):original;}
 function renderCarGarage(){
  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\"/g,'&quot;');
- modalContent.innerHTML='<div class="walletBar">🪙 WALLET · '+money(account.wallet)+' COINS</div><div class="modalTabs"><button class="active" data-tab="cars">🏎️ CARS</button><button data-tab="smoke">💨 DRIFT STYLES</button><button data-tab="atmos">🌌 ATMOSPHERES</button></div><p class="modalText">Cars are permanent cosmetic purchases. Nuts & bolts collected on the road upgrade your engine every 30 pickups, not the appearance of your purchased car.</p><div class="tierGrid">'+GARAGE_CARS.map((v,i)=>{const owned=account.carOwned.includes(i),selected=account.carEquipped===i;return '<div class="tierCard '+(selected?'equipped':'')+'"><div class="carArt" style="--carpaint:'+v.color+';--cartrim:'+v.accent+'"><span>'+(['🚗','🚛','🏁','🏎️','🚌','🌑','🌸','🏎️','☀️','👑'][i])+'</span><b>'+esc(v.name)+'</b></div><div class="tierTitle">'+(i+1)+'. '+esc(v.name)+'</div><div class="tierSub">'+esc(v.desc)+'</div><div class="price">'+(v.price?money(v.price)+' COINS':'FREE')+'</div><button data-car="'+i+'" '+(selected||(!owned&&!garageFree&&account.wallet<v.price)?'disabled':'')+'>'+(selected?'✓ DRIVING':owned?'EQUIP':garageFree?'EQUIP':'BUY CAR')+'</button></div>'}).join('')+'</div>';
+ modalContent.innerHTML='<div class="walletBar">🪙 WALLET · '+money(account.wallet)+' COINS</div><div class="modalTabs"><button class="active" data-tab="cars">🏎️ CARS</button><button data-tab="smoke">💨 DRIFT STYLES</button><button data-tab="atmos">🌌 ATMOSPHERES</button></div><p class="modalText">Cars are permanent cosmetic purchases. Nuts & bolts collected on the road upgrade your engine every 30 pickups, not the appearance of your purchased car.</p><div class="tierGrid">'+GARAGE_CARS.map((v,i)=>{const owned=account.carOwned.includes(i),selected=account.carEquipped===i;return '<div class="tierCard '+(selected?'equipped':'')+'"><div class="carArt" style="--carpaint:'+v.color+';--cartrim:'+v.accent+'"><span>'+(['🚗','🏁','🚓','🚙','🚌','🌑','🌸','🏎️','🏎️','👑'][i])+'</span><b>'+esc(v.name)+'</b></div><div class="tierTitle">'+(i+1)+'. '+esc(v.name)+'</div><div class="tierSub">'+esc(v.desc)+'</div><div class="price">'+(v.price?money(v.price)+' COINS':'FREE')+'</div><button data-car="'+i+'" '+(selected||(!owned&&!garageFree&&account.wallet<v.price)?'disabled':'')+'>'+(selected?'✓ DRIVING':owned?'EQUIP':garageFree?'EQUIP':'BUY CAR')+'</button></div>'}).join('')+'</div>';
  for(const b of modalContent.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>{shopTab=b.dataset.tab;renderShop()});
- for(const b of modalContent.querySelectorAll('[data-car]'))b.addEventListener('click',()=>{const i=Number(b.dataset.car),v=GARAGE_CARS[i];if(!v)return;if(!account.carOwned.includes(i)&&!garageFree){if(account.wallet<v.price)return;account.wallet-=v.price;account.carOwned.push(i);}account.carEquipped=i;if(!garageFree)saveAccount();updateCoinHud();if(state==='menu')kicker.textContent='STARTING CAR · '+carLabel();renderCarGarage();});
+ for(const b of modalContent.querySelectorAll('[data-car]'))b.addEventListener('click',()=>{const i=Number(b.dataset.car),v=GARAGE_CARS[i];if(!v)return;if(!account.carOwned.includes(i)&&!garageFree){if(account.wallet<v.price)return;account.wallet-=v.price;account.carOwned.push(i);}account.carEquipped=i;syncCarSmoke();if(!garageFree)saveAccount();updateCoinHud();if(state==='menu')kicker.textContent='STARTING CAR · '+carLabel();renderCarGarage();});
 }
 function renderShop(){
  const isCar=shopTab==='cars';if(isCar){renderCarGarage();return;}
  const isSmoke=shopTab==='smoke',list=isSmoke?ALL_SMOKES:ALL_THEMES;
- const previewIndex=isSmoke?(previewSmokeIndex??account.smokeEquipped):(previewAtmosIndex??account.atmosEquipped);
+ const previewIndex=isSmoke?equippedSmokeForCar():(previewAtmosIndex??account.atmosEquipped);
  const pv=list[previewIndex];
- const previewBox=isSmoke
- ? `<div class="shopPreviewBox stickyPreview"><div class="tierTitle">LIVE PREVIEW · ${pv[0]}</div><div class="tierSub">${pv[2]}</div><canvas id="driftPreviewCanvas" class="driftPreviewCanvas" width="680" height="198" aria-label="Animated drift style preview"></canvas></div>`
- : `<div class="shopPreviewBox"><div class="tierTitle">ATMOSPHERE PREVIEW · ${pv.name}</div><div class="tierSub">${pv.desc}</div><div class="previewThemeScene" style="background:linear-gradient(155deg,${pv.bg[0]},${pv.bg[1]} 38%,${pv.bg[2]} 75%,${pv.bg[3]})"><div style="position:absolute;left:8%;right:8%;bottom:22px;height:48px;transform:skewX(-20deg);background:linear-gradient(110deg,${pv.deck.join(',')});border-radius:7px;border:1px solid #ffffff24;box-shadow:0 6px 22px #0008"></div><div style="position:absolute;left:7%;right:7%;bottom:21px;height:3px;background:linear-gradient(90deg,${pv.neon[0]},${pv.neon[1]});box-shadow:0 0 18px ${pv.neon[0]},0 0 20px ${pv.neon[1]}"></div></div></div>`;
+ const previewBox=isSmoke ? '' : `<div class="shopPreviewBox"><div class="tierTitle">ATMOSPHERE PREVIEW · ${pv.name}</div><div class="tierSub">${pv.desc}</div><div class="previewThemeScene" style="background:linear-gradient(155deg,${pv.bg[0]},${pv.bg[1]} 38%,${pv.bg[2]} 75%,${pv.bg[3]})"><div style="position:absolute;left:8%;right:8%;bottom:22px;height:48px;transform:skewX(-20deg);background:linear-gradient(110deg,${pv.deck.join(',')});border-radius:7px;border:1px solid #ffffff24;box-shadow:0 6px 22px #0008"></div><div style="position:absolute;left:7%;right:7%;bottom:21px;height:3px;background:linear-gradient(90deg,${pv.neon[0]},${pv.neon[1]});box-shadow:0 0 18px ${pv.neon[0]},0 0 20px ${pv.neon[1]}"></div></div></div>`;
  modalContent.innerHTML=`<div class="walletBar">✦ YOUR WALLET: ${money(account.wallet)} COINS · Saved between games ${garageFree?'· GARAGE CHEAT ACTIVE':''}</div>
  <div class="modalTabs"><button type="button" data-tab="cars">🏎️ CARS</button><button type="button" data-tab="smoke" class="${isSmoke?'active':''}">💨 DRIFT STYLES</button><button type="button" data-tab="atmos" class="${!isSmoke?'active':''}">🌌 ATMOSPHERES</button></div>
- <p class="modalText">Earn coins from driving. Every item is a permanent unlock. Use PREVIEW before buying to see the style. Buying garage items never affects your current run’s car upgrades.</p>${previewBox}
+ <p class="modalText">Earn coins by collecting bolts. Each car remembers its own equipped drift. Atmospheric worlds can still be previewed.</p>${previewBox}
  <div class="tierGrid">${list.map((v,i)=>{
- const name=isSmoke?v[0]:v.name,price=isSmoke?smokeSalePrice(i):0,desc=isSmoke?v[2]:v.desc,owns=account[shopTab+'Owned'].includes(i)||garageFree,selected=account[shopTab+'Equipped']===i;
+ const name=isSmoke?v[0]:v.name,price=isSmoke?smokeSalePrice(i):0,desc=isSmoke?v[2]:v.desc,owns=account[shopTab+'Owned'].includes(i)||garageFree,selected=isSmoke?equippedSmokeForCar()===i:account.atmosEquipped===i;
  const achIndex=isSmoke?i-SMOKE_OPTIONS.length:-1,achSymbols=['🛞','🏎️','🔥','🎵','🎣','🕳️','🎢','🍌','🥤','💸'],swatch=isSmoke&&achIndex>=0
  ?'<div class="themePreview achievementSwatch" data-symbol="'+achSymbols[achIndex]+'" style="--swatch1:'+BONUS_COLORS[achIndex]+';--swatch2:'+(achIndex===5?'#9e8ceb':['#e9c79a','#ff8d98','#ffd958','#5ff5fc','#b6fcff','#4b376d','#e7fdff','#fff7ad','#ffacd9','#b9ffcc'][achIndex])+'"></div>'
  :isSmoke?'<div class="themePreview" style="background:linear-gradient(90deg,#263448,'+(['#7f9aad','#e9f3ff','#5aeeff','#cf85ff','#ffae48','#aaff73','#9ceeff','#ff70e1','#fff7ca','#ba88ff'][i]||'#83dffc')+')"></div>'
  :'<div class="themePreview" style="background:linear-gradient(90deg,'+v.bg.join(',')+')"></div>';
  const exclusive=isSmoke?i>=SMOKE_OPTIONS.length:false,afford=garageFree||(!exclusive&&account.wallet>=price);
- return `<div class="tierCard ${selected?'equipped':''}"><div class="tierTitle">${i+1}. ${name}</div>${swatch}<div class="tierSub">${desc}</div><div class="price">${isSmoke&&i>=6&&i<SMOKE_OPTIONS.length?'🔥 SALE · ':''}${price===0||garageFree?'FREE':money(price)+' coins'}${isSmoke&&i>=6&&i<SMOKE_OPTIONS.length?' <s style="opacity:.5;font-size:11px">'+money(v[1])+'</s>':''}</div><div class="tierActions"><button type="button" class="previewMini ${(previewIndex===i)?'active':''}" data-preview="${i}">${previewIndex===i?'PREVIEWING':'PREVIEW'}</button><button type="button" data-buy="${i}" ${selected?'disabled':''} ${(owns||afford)?'':'disabled'}>${selected?'✓ EQUIPPED':owns?'EQUIP':afford?'BUY':exclusive?'ACHIEVEMENT':'NEED '+money(price-account.wallet)}</button></div></div>`;
+ return `<div class="tierCard ${selected?'equipped':''}"><div class="tierTitle">${i+1}. ${name}</div>${swatch}<div class="tierSub">${desc}</div><div class="price">${isSmoke&&i>=6&&i<SMOKE_OPTIONS.length?'🔥 SALE · ':''}${price===0||garageFree?'FREE':money(price)+' coins'}${isSmoke&&i>=6&&i<SMOKE_OPTIONS.length?' <s style="opacity:.5;font-size:11px">'+money(v[1])+'</s>':''}</div><div class="tierActions">${isSmoke?'':`<button type="button" class="previewMini ${(previewIndex===i)?'active':''}" data-preview="${i}">${previewIndex===i?'PREVIEWING':'PREVIEW'}</button>`}<button type="button" data-buy="${i}" ${selected?'disabled':''} ${(owns||afford)?'':'disabled'}>${selected?'✓ EQUIPPED':owns?'EQUIP':afford?'BUY':exclusive?'ACHIEVEMENT':'NEED '+money(price-account.wallet)}</button></div></div>`;
  }).join('')}</div>`;
  for(const b of modalContent.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>{shopTab=b.dataset.tab;previewSmokeIndex=null;previewAtmosIndex=null;renderShop()});
  for(const b of modalContent.querySelectorAll('[data-buy]'))b.addEventListener('click',()=>purchaseItem(+b.dataset.buy));
- for(const b of modalContent.querySelectorAll('[data-preview]'))b.addEventListener('click',()=>{if(shopTab==='smoke')previewSmokeIndex=+b.dataset.preview;else previewAtmosIndex=+b.dataset.preview;resize();renderShop()});
+ for(const b of modalContent.querySelectorAll('[data-preview]'))b.addEventListener('click',()=>{if(shopTab==='atmos')previewAtmosIndex=+b.dataset.preview;resize();renderShop()});
 }
 function purchaseItem(i){
  const list=shopTab==='smoke'?ALL_SMOKES:ALL_THEMES,item=list[i];if(!item)return;if(!garageFree&&shopTab==='smoke'&&i>=SMOKE_OPTIONS.length&&!account.smokeOwned.includes(i))return;
@@ -930,7 +933,7 @@ function purchaseItem(i){
   if(!garageFree&&account.wallet<price)return;
   if(!garageFree)account.wallet-=price;if(!garageFree)owned.push(i);
  }
- if(garageFree){account[shopTab+'Equipped']=i;}else{account[shopTab+'Equipped']=i;saveAccount();}
+ if(shopTab==='smoke'){account.smokeEquipped=i;account.carSmoke[account.carEquipped]=i}else account.atmosEquipped=i;if(!garageFree)saveAccount();
  if(shopTab==='atmos')previewAtmosIndex=null; if(shopTab==='smoke')previewSmokeIndex=null; if(shopTab==='atmos')resize();
  if(soundEnabled)sound(850,.13,.035);
  renderShop();
@@ -971,7 +974,7 @@ function renderProfile(){
    feedback.textContent=action==='register'?'Creating secure cloud backup…':'Restoring your cloud save…';
    try{const data=await cloudRequest({action,username,password,playerId:competitionId,profile:account});
     backupGuestProfile();applyCloudProfile(data);feedback.textContent='✓ Signed in. Your cloud progress is ready.';
-    if(!account.newsSeen)showNewsletterOnce();
+    showNewsletterOnce();
     renderProfile();
    }catch(e){feedback.textContent=e.message}
   };
@@ -1018,6 +1021,7 @@ async function initOnlineLeaderboard(){
 function prepareRoad(){seed=765239;fxSeed=318791;tiles=[];runs=[];ramps=[];bananas=[];coins=[];branches=[];loops=[];activeLoop=null;orangeSeeded=false;purpleSeeded=false;purpleAwarded.clear();lastBranchTurn=-100;lastRampTurn=-20;redSeeded=false;gen={x:0,z:0,dir:'z',turn:0,s:0};progress=0;generateRun();extendRoad(roadAhead)}
 function restart(){
  if(resetPending||resetBusy)return;
+ if(cleanName(account.nickname).length<2){if(modalWrap.classList.contains('open')){modalPage='profile';renderModal()}else openModal('profile');return;}
  carTier=0;prepareRoad();player={x:0,z:7,y:0,vx:0,vz:40,vy:0,heading:0,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};
  state='playing';fxPath.length=0;held=false;touchHeld=false;driftLeft=0;score=0;time=0;bonusScoreSeconds=0;deadSeconds=0;dropShown=false;camInitialized=false;tracks=[];smoke=[];coinBursts=[];coinCount=0;carTier=0;routeKind='normal';loopBonusTime=0;activeLoop=null;greenDriftTime=0;greenBranchId=null;greenRewardFlash=0;greenDriftAwarded.clear();greenDriftGrace=0;bananaSpinTime=0;bananaSpinAngle=0;bananaSpinCount=0;upgradeFlash=0;upgradeToast.classList.remove('visible');updateCoinHud();skidClock=0;streak=0;screenShake=0;accumulator=0;
  scoreEl.textContent='000000';speedEl.textContent='150';level.textContent='';overlay.classList.add('hidden');overlay.classList.remove('intro');shell.classList.remove('menu');backToModes.style.display='none';updateSpeedHud();play.blur();beginCompetitionRun();sound(510,.08,.032);
@@ -1399,7 +1403,7 @@ function update(dt){
  player.tilt+=(clamp(-slip*.32,-.30,.30)-player.tilt)*(1-Math.exp(-9*dt));
  if(intensity>.14&&!player.airborne&&!player.fallingOff&&![14,16].includes(account.smokeEquipped)){
    skidClock+=dt;
-   if(skidClock>(account.smokeEquipped===15?.063:.028)){
+   if(skidClock>(account.smokeEquipped>=17?.095:account.smokeEquipped===15?.063:.028)){
      skidClock=0;
      const c=Math.cos(player.heading),si=Math.sin(player.heading);
      for(const sx of [-.85,.85]){
@@ -1407,17 +1411,17 @@ function update(dt){
        if(onRoad(x,z))tracks.push({x,z,dx:-player.vx*.11,dz:-player.vz*.11,life:1.25,alpha:intensity,tier:account.smokeEquipped,hue:Math.round(fxRnd()*360)});
      }
      {const s=activeSmoke(),tier=account.smokeEquipped,count=Math.min(10,s[5]);
-      for(let n=0;n<(tier===15?Math.min(count,3):count);n++)if(fxRnd()<(tier===15?fxQuality*.87:tier>=6?.83:.74)){
-       const duration=tier===15?Math.min(.65,s[6])*(.73+fxRnd()*.36):s[6]*(.72+fxRnd()*.43);
+      for(let n=0;n<(tier>=17?Math.min(count,2):tier===15?Math.min(count,3):count);n++)if(fxRnd()<(tier>=17?fxQuality*.38:tier===15?fxQuality*.87:tier>=6?.83:.74)){
+       const duration=tier>=17?Math.min(.52,s[6]):tier===15?Math.min(.65,s[6])*(.73+fxRnd()*.36):s[6]*(.72+fxRnd()*.43);
        smoke.push({x:player.x-1.7*si+fxRandom(-1.9,1.9)*c,z:player.z-1.7*c+fxRandom(-1.9,1.9)*si,y:.28+fxRnd()*.2,life:duration,maxLife:duration,r:fxRandom(.2,.56)*s[7],hue:Math.floor(fxRnd()*360),tier,phase:fxRnd()*TAU});
       }
      }
    }
  }
  for(let i=tracks.length-1;i>=0;i--){tracks[i].life-=dt;if(tracks[i].life<=0)tracks.splice(i,1)}
- const trackCap=account.smokeEquipped===15?72:155;if(tracks.length>trackCap)tracks.splice(0,tracks.length-trackCap);
+ const trackCap=account.smokeEquipped>=17?42:account.smokeEquipped===15?72:115;if(tracks.length>trackCap)tracks.splice(0,tracks.length-trackCap);
  for(let i=smoke.length-1;i>=0;i--){let p=smoke[i];p.life-=dt;p.y+=dt*(.6+account.smokeEquipped*.10);if(p.life<=0)smoke.splice(i,1)}
- const smokeCap=account.smokeEquipped===15?50:125;sampleFxTrail();if(smoke.length>smokeCap)smoke.splice(0,smoke.length-smokeCap);
+ const smokeCap=account.smokeEquipped>=17?26:account.smokeEquipped===15?50:95;sampleFxTrail();if(smoke.length>smokeCap)smoke.splice(0,smoke.length-smokeCap);
  syncScore(dt,raceFromX,raceFromZ,speed);
  // Progress now tracks green-road time only, independent of the car's drift.
  updateGreenStay(dt);
@@ -1674,7 +1678,7 @@ if(player.y>=0&&onRoad(player.x,player.z)){
  // Footprint rotates with the displayed model but remains projected on the road.
  const h=state==='menu'?menuYaw:player.heading+(activeLoop?0:bananaSpinAngle),co=Math.cos(h),si=Math.sin(h);
  const shadow=(x,z)=>vec(player.x+co*x+si*z,.025,player.z-si*x+co*z);
- const shadeLength=kind==='bus'?3.95:kind==='truck'?3.12:2.9;
+ const shadeLength=kind==='bus'?4.85:kind==='monster'?3.15:2.9;
  poly([shadow(-1.5,-shadeLength),shadow(1.5,-shadeLength),shadow(1.5,shadeLength),shadow(-1.5,shadeLength)],player.airborne?'#03051b47':'#03051b70');
 }
 for(let zz of [-1.4,1.4])for(let xx of [-1.34,1.34])box(xx-.26,xx+.26,.15,.88,zz-.7,zz+.7,['#0b111c','#08101a','#182238','#111c2e','#050912']);
@@ -1731,11 +1735,11 @@ segment(local(-1.04,1.07,-2.36),local(-.57,1.07,-2.36),'#ff667e',3.1);segment(lo
 const fxPath=[];let fxQuality=1,fxAvg=.017;
 function updateFxQuality(dt){fxAvg=fxAvg*.94+Math.min(.06,dt)*.06;const desired=fxAvg>.032?.57:fxAvg>.026?.76:1;fxQuality+=(desired-fxQuality)*.06}
 function sampleFxTrail(){
- if(state==='playing'&&!player.airborne&&!player.fallingOff&&driftLeft>.12&&[15,16].includes(account.smokeEquipped)){
+ if(state==='playing'&&!player.airborne&&!player.fallingOff&&driftLeft>.12&&[15,16,17,18,19].includes(account.smokeEquipped)){
   const prev=fxPath[fxPath.length-1],k=account.smokeEquipped;
-  if(!prev||prev.tier!==k||Math.hypot(player.x-prev.x,player.z-prev.z)>1.5)fxPath.push({x:player.x,z:player.z,heading:player.heading,at:time,tier:k})
+  if(!prev||prev.tier!==k||Math.hypot(player.x-prev.x,player.z-prev.z)>(k>=17?3.5:1.5))fxPath.push({x:player.x,z:player.z,heading:player.heading,at:time,tier:k})
  }
- while(fxPath.length&&(time-fxPath[0].at>2.9||fxPath.length>105))fxPath.shift();
+ while(fxPath.length&&(time-fxPath[0].at>2.0||fxPath.length>65))fxPath.shift();
 }
 function drawFxRibbon(){
  const k=account.smokeEquipped;if(state!=='playing'||![15,16].includes(k)||fxPath.length<2)return;
@@ -1769,10 +1773,10 @@ function getBonusSprite(k){
 function drawBonusTrail(){
  const k=account.smokeEquipped;if(k<17||k>19||state!=='playing')return;
  const img=getBonusSprite(k);ctx.save();let count=0;
- for(let i=fxPath.length-1;i>=0;i-=3){const q=fxPath[i];if(q.tier!==k||time-q.at>1.7)continue;
+ for(let i=fxPath.length-1;i>=0;i-=4){const q=fxPath[i];if(q.tier!==k||time-q.at>1.7)continue;
   const p=project(vec(q.x,.42,q.z));if(!p||p.depth>130||p.x< -25||p.x>W+25)continue;
   const life=1-(time-q.at)/1.7,sz=Math.max(8,23*life);
-  ctx.globalAlpha=life;ctx.drawImage(img,p.x-sz/2,p.y-sz/2,sz,sz);if(++count>=25)break;
+  ctx.globalAlpha=life;ctx.drawImage(img,p.x-sz/2,p.y-sz/2,sz,sz);if(++count>=12)break;
  }
  ctx.restore();
 }
@@ -1944,7 +1948,7 @@ function drawGaragePreview(ts){
  c.save();c.translate(w*.73,h*.36);c.rotate(-.24);c.shadowColor='#34f9ff';c.shadowBlur=14;c.fillStyle='#19bad1';c.fillRect(-41,-21,92,48);c.fillStyle='#bff9ff';c.fillRect(-20,-18,47,37);c.fillStyle='#0b1d39';c.fillRect(16,-11,15,22);c.fillStyle='#061521';c.fillRect(-38,-25,22,6);c.fillRect(22,-25,22,6);c.fillRect(-38,27,22,6);c.fillRect(22,27,22,6);c.restore();
 }
 function frame(ts){if(!last)last=ts;let dt=Math.min(.05,(ts-last)/1000);last=ts;updateFxQuality(dt);updateScoreBonusBadge();
-if(state==='menu'){menuYaw=(menuYaw+dt*.58)%TAU;player.tilt=0;player.edgeRoll=0;player.edgePitch=0;player.loopPitch=0;player.y=0}accumulator=Math.min(.07,accumulator+dt);let n=0;while(accumulator>=FIX&&n<7){update(FIX);accumulator-=FIX;n++}render(dt);drawGaragePreview(ts);requestAnimationFrame(frame)}
+if(state==='menu'){menuYaw=(menuYaw+dt*.58)%TAU;player.tilt=0;player.edgeRoll=0;player.edgePitch=0;player.loopPitch=0;player.y=0}accumulator=Math.min(.07,accumulator+dt);let n=0;while(accumulator>=FIX&&n<7){update(FIX);accumulator-=FIX;n++}render(dt);requestAnimationFrame(frame)}
 resize();initOnlineLeaderboard();restoreCloudAccount();prepareRoad();player={x:.8,z:10.8,y:0,vx:0,vz:0,vy:0,heading:.58,tilt:0,edgeRoll:0,edgePitch:0,fallRollVel:0,fallPitchVel:0,fallSideX:0,fallSideZ:0,loopPitch:0,ledgeTime:0,airborne:false,fallingOff:false,boost:0,rampCooldown:0,wasRight:false};state='menu';shell.classList.add('menu');overlay.classList.add('intro');play.style.display='none';updateCoinHud();updateSpeedHud();requestAnimationFrame(frame);
 window.DriftBossDebug={
  start:restart,step:dt=>{for(let t=0;t<dt;t+=FIX)update(FIX)},steer:v=>{held=!!v},showMenu:showMainMenu,
