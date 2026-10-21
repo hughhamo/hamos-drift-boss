@@ -15,3 +15,9 @@
   to = "/.netlify/functions/leaderboard"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/api/account"
+  to = "/.netlify/functions/account"
+  status = 200
+  force = true
