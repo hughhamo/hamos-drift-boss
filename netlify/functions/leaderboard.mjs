@@ -19,7 +19,10 @@ function publicDisplay(x){
 }
 
 
-async function scores(store){
+// Persistent, private player-ID bans; a browser-created ID is not a verified human identity.
+const banKey = id => 'bans/'+id;
+const isBanned = async (store,id) => !!(await store.get(banKey(id),{type:'json'}));
+async function scores(store,includeBanned=false){
   let cursor,records=[];
   do{
     const page=await store.list({prefix:'scores/',...(cursor?{cursor}:{})});
@@ -27,7 +30,8 @@ async function scores(store){
     cursor=page.cursor;
   }while(cursor&&records.length<3000);
   return records.filter(x=>x&&typeof x.name==='string'&&Number.isInteger(x.score))
-    .map(x=>({...publicDisplay(x),score:x.score,id:x.id,updatedAt:x.updatedAt||''}))
+    .map(x=>({...publicDisplay(x),score:x.score,id:x.id,updatedAt:x.updatedAt||'',banned:!!x.bannedAt,bannedAt:x.bannedAt||'',banReason:x.banReason||''}))
+    .filter(x=>includeBanned||!x.banned)
     .sort((a,b)=>b.score-a.score||a.updatedAt.localeCompare(b.updatedAt));
 }
 export default async function leaderboard(req){
@@ -45,12 +49,12 @@ export default async function leaderboard(req){
     if(!data||typeof data!=='object')return bad('Invalid data');
     // Administrative corrections require a private key held ONLY in Netlify's environment.
     // The discoverable shortcut key '9' is never sufficient authorization.
-    if(['adminList','adminEdit','adminClear'].includes(data.action)){
+    if(['adminList','adminEdit','adminClear','adminBan','adminUnban'].includes(data.action)){
       const configuredSecret=process.env.HAMOS_MODERATOR_KEY||'';
       if(configuredSecret.length<24)return bad('The server has no valid HAMOS_MODERATOR_KEY. Set at least 24 characters in Netlify Production and deploy again.',503);
       if(!validAdminKey(data.adminKey))return bad('The entered password does not match the Netlify Production password. Check for extra spaces or replace and redeploy.',403);
       if(data.action==='adminList'){
-        const rows=(await scores(store)).slice(0,250);
+        const rows=(await scores(store,true)).slice(0,250);
         return json({players:rows.length,rows});
       }
       const targetId=data.targetId;
@@ -58,6 +62,26 @@ export default async function leaderboard(req){
       const key='scores/'+targetId;
       const record=await store.get(key,{type:'json'});
       if(!record)return bad('Player not found',404);
+      if(data.action==='adminBan'){
+        if(record.bannedAt)return bad('Player is already permanently banned',409);
+        const reason=String(data.reason||'').trim().slice(0,160);
+        if(reason.length<6)return bad('A reason of at least 6 characters is required');
+        const at=new Date().toISOString();
+        // Preserve the score for a possible appeal, but hide it from public rankings.
+        // The separate ban record survives attempts to re-submit with the same player ID.
+        await store.setJSON(banKey(targetId),{id:targetId,reason,at});
+        await store.setJSON(key,{...record,bannedAt:at,banReason:reason});
+        await store.setJSON('moderation-log/'+crypto.randomUUID(),{id:targetId,action:'permanent-ban',reason,at});
+        return json({saved:true,banned:true});
+      }
+      if(data.action==='adminUnban'){
+        if(!record.bannedAt && !(await isBanned(store,targetId)))return bad('Player is not banned',409);
+        const {bannedAt,banReason,...restored}=record;
+        await store.setJSON(key,restored);
+        await store.delete(banKey(targetId));
+        await store.setJSON('moderation-log/'+crypto.randomUUID(),{id:targetId,action:'unban',at:new Date().toISOString()});
+        return json({saved:true,banned:false});
+      }
       if(data.action==='adminClear'){
         const {moderatorDisplay,...original}=record;
         await store.setJSON(key,original);
@@ -79,6 +103,7 @@ export default async function leaderboard(req){
     // This separate deletion never modifies any other player's stored record.
     if(data.action==='delete'){
       if(!isID(id))return bad('Invalid player ID');
+      if(await isBanned(store,id))return bad('This player account is banned from the leaderboard',403);
       const key='scores/'+id;
       await store.setJSON('resets/'+id,{at:Date.now()});
       await store.delete(key);
@@ -86,6 +111,7 @@ export default async function leaderboard(req){
     }
     const name=cleanName(data.name),fullName=cleanFull(data.fullName),showFullName=data.showFullName===true&&fullName.length>=3;
     if(!isID(id)||name.length<2)return bad('Choose a nickname of at least two characters');
+    if(await isBanned(store,id))return bad('This player account has been permanently banned from the leaderboard',403);
     if(data.action==='start'){
       const runId=crypto.randomUUID();
       await store.setJSON('runs/'+runId,{id,startedAt:Date.now(),used:false});
@@ -111,6 +137,8 @@ export default async function leaderboard(req){
       const latestReset=await store.get('resets/'+id,{type:'json'});
       if(latestReset && Number(latestReset.at)>=run.startedAt)return bad('This run belongs to a reset account',409);
       const key='scores/'+id,prior=await store.get(key,{type:'json'});
+      // Recheck persistent ban after run verification and immediately before writing.
+      if(prior?.bannedAt||await isBanned(store,id))return bad('This player account has been permanently banned from the leaderboard',403);
       const best=Math.max(score,Number(prior?.score)||0);
       await store.setJSON(key,{...prior,id,name,fullName,showFullName,score:best,updatedAt:new Date().toISOString()});
       const all=await scores(store);
