@@ -8,7 +8,9 @@ const json = (data,status=200)=>Response.json(data,{status,headers:{'Cache-Contr
 const bad = (message,status=400)=>json({error:message},status);
 const storeName='drift-boss-global-leaderboard';
 // Fixed, published scoring rules and a scheduled Halloween wallet promotion.
-const SCORE_MULTIPLIER=3;
+const SCORE_MULTIPLIER=1;
+const NORMALIZED_SCORE_FLAG='normalizedTo1xV1';
+const LEGACY_SCORE_FACTOR=.40;
 const HALLOWEEN_START=Date.parse('2026-10-22T00:00:00Z');
 const HALLOWEEN_END=Date.parse('2026-11-03T00:00:00Z');
 const ACTIVE_WINDOW_MS=90000;
@@ -57,11 +59,19 @@ async function canEditLinkedPlayer(req,id){
  return !!owner&&owner.playerId===id;
 }
 const isBanned = async (store,id) => !!(await store.get(banKey(id),{type:'json'}));
+// Existing published 3×-era scores lose 60% exactly once. This is a
+// persisted migration, not a reduction applied on each page view.
+async function normalizeScore(store,record){
+ if(!record||record[NORMALIZED_SCORE_FLAG]||!Number.isInteger(record.score))return record;
+ const normalized={...record,score:Math.floor(record.score*LEGACY_SCORE_FACTOR),[NORMALIZED_SCORE_FLAG]:true};
+ await store.setJSON('scores/'+record.id,normalized);
+ return normalized;
+}
 async function scores(store,includeBanned=false){
   let cursor,records=[];
   do{
     const page=await store.list({prefix:'scores/',...(cursor?{cursor}:{})});
-    records.push(...await Promise.all(page.blobs.map(x=>store.get(x.key,{type:'json'}).catch(()=>null))));
+    records.push(...await Promise.all(page.blobs.map(async x=>{const rec=await store.get(x.key,{type:'json'}).catch(()=>null);return normalizeScore(store,rec)})));
     cursor=page.cursor;
   }while(cursor&&records.length<3000);
   return records.filter(x=>x&&typeof x.name==='string'&&Number.isInteger(x.score))
@@ -230,7 +240,33 @@ export default async function leaderboard(req){
       const key='scores/'+id;
       await store.setJSON('resets/'+id,{at:Date.now()});
       await store.delete(key);
+      await store.delete('verified-best/'+id);
       return json({deleted:true});
+    }
+    // Publish only the highest server-verified run for this player ID.
+    // One scores/<id> record exists; publishing again replaces it in place.
+    if(data.action==='myBest'){
+      const saved=await normalizeScore(store,await store.get('scores/'+id,{type:'json'}));
+      const verified=await store.get('verified-best/'+id,{type:'json'});
+      return json({verifiedBest:Math.max(Number(verified?.score)||0,Number(saved?.score)||0),publishedScore:Number(saved?.score)||0,hasVerifiedRun:!!verified});
+    }
+    if(data.action==='submitBest'){
+      const displayName=cleanName(data.name);
+      if(displayName.length<2)return bad('Choose a nickname before publishing your score');
+      if(await isBanned(store,id))return bad('This player has been banned from the rankings',403);
+      const reset=await store.get('resets/'+id,{type:'json'});
+      const previouslySaved=await normalizeScore(store,await store.get('scores/'+id,{type:'json'}));
+      const verified=await store.get('verified-best/'+id,{type:'json'});
+      if(!previouslySaved&&!verified)return bad('Finish a run with an online connection to verify your best score first',409);
+      if(reset&&Number(verified?.verifiedAt||0)<=Number(reset.at)&&!previouslySaved)return bad('Finish a new run after resetting your account',409);
+      const score=Math.max(Number(verified?.score)||0,Number(previouslySaved?.score)||0);
+      if(!Number.isInteger(score)||score<1)return bad('No verified positive score available',409);
+      const fullName=cleanFull(data.fullName);
+      const showFullName=data.showFullName===true&&fullName.length>=3;
+      const published={...previouslySaved,id,name:displayName,fullName,showFullName,score,updatedAt:new Date().toISOString(),[NORMALIZED_SCORE_FLAG]:true};
+      await store.setJSON('scores/'+id,published);
+      const all=await scores(store);
+      return json({saved:true,publishedScore:score,verifiedBest:score,rank:all.findIndex(row=>row.id===id)+1,players:all.length,top:all.slice(0,50).map(({name,fullName,score})=>({name,fullName,score}))});
     }
     const name=cleanName(data.name),fullName=cleanFull(data.fullName),showFullName=data.showFullName===true&&fullName.length>=3;
     if(!isID(id)||name.length<2)return bad('Choose a nickname of at least two characters');
@@ -241,7 +277,7 @@ export default async function leaderboard(req){
       return json({runId,ready:true});
     }
     if(data.action==='rename'){
-      const key='scores/'+id,record=await store.get(key,{type:'json'});
+      const key='scores/'+id,record=await normalizeScore(store,await store.get(key,{type:'json'}));
       if(!record)return json({saved:false,message:'Finish a run to appear on the board.'});
       await store.setJSON(key,{...record,name,fullName,showFullName,updatedAt:new Date().toISOString()});
       return json({saved:true});
@@ -256,20 +292,21 @@ export default async function leaderboard(req){
       const now=Date.now(),elapsed=(now-run.startedAt)/1000;
       // The server independently checks whether the run overlapped the limited-time
       // event. Paused runs may earn less bonus time than the actual clock overlap.
-      const permittedBonus=0; // Previous limited 2× bonus has been retired.
+      const permittedBonus=0; // No additional 2× or 3× score promotion is active.
       const expectedScore=Math.floor((seconds+purpleSeconds)*145*SCORE_MULTIPLIER);
       if(elapsed<0||elapsed>86400||seconds>elapsed+7||bonusSeconds>permittedBonus+.1||score>(elapsed+8+(elapsed+8)*.3)*145*SCORE_MULTIPLIER||Math.abs(score-expectedScore)>3)return bad('Score verification failed',422);
       await store.setJSON(runKey,{...run,used:true});
       // Recheck right before writing, in case the player reset while a score was being verified.
       const latestReset=await store.get('resets/'+id,{type:'json'});
       if(latestReset && Number(latestReset.at)>=run.startedAt)return bad('This run belongs to a reset account',409);
-      const key='scores/'+id,prior=await store.get(key,{type:'json'});
+      const key='scores/'+id,prior=await normalizeScore(store,await store.get(key,{type:'json'}));
       // Recheck persistent ban after run verification and immediately before writing.
       if(prior?.bannedAt||await isBanned(store,id))return bad('This player account has been permanently banned from the leaderboard',403);
-      const best=Math.max(score,Number(prior?.score)||0);
-      await store.setJSON(key,{...prior,id,name,fullName,showFullName,score:best,updatedAt:new Date().toISOString()});
+      const existingBest=await store.get('verified-best/'+id,{type:'json'});
+      const best=Math.max(score,Number(existingBest?.score)||0,Number(prior?.score)||0);
+      await store.setJSON('verified-best/'+id,{id,score:best,verifiedAt:now});
       const all=await scores(store);
-      return json({saved:true,score:best,isPersonalBest:score>(Number(prior?.score)||0),rank:all.findIndex(x=>x.id===id)+1,players:all.length,top:all.slice(0,10).map(({name,fullName,score})=>({name,fullName,score}))});
+      return json({saved:true,verifiedBest:best,publishedScore:Number(prior?.score)||0,isPersonalBest:score>Math.max(Number(existingBest?.score)||0,Number(prior?.score)||0),pendingPublication:best>(Number(prior?.score)||0),players:all.length,top:all.slice(0,10).map(({name,fullName,score})=>({name,fullName,score}))});
     }
     return bad('Unknown action');
   }catch(err){
