@@ -26,7 +26,7 @@ function cleanProfile(raw){
  verifiedBest:reasonable(p.verifiedBest,50000000),
  achievementClaims:cleanNums(p.achievementClaims,32),
  achievementCounts:{loops:reasonable(counts.loops,1000000),bananas:reasonable(counts.bananas,1000000),green:reasonable(counts.green,1000000),red:reasonable(counts.red,1000000)},
- pSecretRedeemed:p.pSecretRedeemed===true,newsSeen:p.newsSeen===true,coinAchievementMigrationV2:p.coinAchievementMigrationV2===true,motorsportNewsSeen:p.motorsportNewsSeen===true,watercraftNewsSeen:p.watercraftNewsSeen===true,golfNewsSeen:p.golfNewsSeen===true,redPickupRewardV3:p.redPickupRewardV3===true};
+ pSecretRedeemed:p.pSecretRedeemed===true,newsSeen:p.newsSeen===true,coinAchievementMigrationV2:p.coinAchievementMigrationV2===true,motorsportNewsSeen:p.motorsportNewsSeen===true,watercraftNewsSeen:p.watercraftNewsSeen===true,golfNewsSeen:p.golfNewsSeen===true,redPickupRewardV3:p.redPickupRewardV3===true,scoreNormalizedV1:p.scoreNormalizedV1===true};
 }
 async function currentSession(req,store){
  const cookie=req.headers.get('cookie')||'';
