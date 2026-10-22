@@ -2010,7 +2010,50 @@ function drawSolidShowcaseVehicle(kind){
  }
 }
 
-function drawCar(){if(selectedCar().type==='golf'){drawGolfCart();return;}if(selectedCar().type==='bus'||selectedCar().type==='phantom'){drawSolidShowcaseVehicle(selectedCar().type);return;}if(selectedCar().type==='boat'){drawPowerBoat();return;}let faces=[];const cs=currentStyle(),vehicle=selectedCar(),kind=vehicle.type;const bodyW=1,bodyL=1,bodyH=1;
+function drawBeadysTractor(){
+ // Standalone opaque low-poly farm tractor, gold bodywork, rear tractor tyres.
+ const faces=[];
+ function face(coords,fill){
+  const pts=coords.map(v=>local(v[0],v[1],v[2]));
+  const d=pts.reduce((sum,p)=>sum+(p.x-camera.eye.x)*camera.forward.x+(p.y-camera.eye.y)*camera.forward.y+(p.z-camera.eye.z)*camera.forward.z,0)/pts.length;
+  faces.push({pts,fill,d});
+ }
+ function block(x0,x1,y0,y1,z0,z1,colors){
+  const [top,left,right,front,back]=Array.isArray(colors)?colors:Array(5).fill(colors);
+  face([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]],top);
+  face([[x0,y0,z0],[x0,y1,z0],[x0,y1,z1],[x0,y0,z1]],left);
+  face([[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],[x1,y0,z0]],right);
+  face([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],front);
+  face([[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0]],back);
+ }
+ // Oversized deep-tread rear tyres and smaller front tyres.
+ for(const z of [-1.62,1.75])for(const side of [-1,1]){
+  const back=z<0, x=side*(back?1.56:1.35),radius=back?1.14:.75;
+  block(x-.36,x+.36,.08,radius*1.6,z-(back?.81:.58),z+(back?.81:.58),['#242d2e','#0b121b','#43505a','#11171f','#0c111b']);
+  block(x-.41,x+.41,radius*.58,radius*.84,z-(back?.69:.43),z+(back?.69:.43),['#4b4d43','#161a23','#c9b570','#8f813d','#171b22']);
+  for(let j=0;j<4;j++){const off=(j-1.5)*(back?.29:.19);block(x-.44,x+.44,radius*.1,radius*.2,z+off-.08,z+off+.08,'#151b1d')}
+ }
+ // Main chassis / golden engine housing.
+ block(-1.16,1.16,.83,1.46,-2.54,2.49,['#ffc73d','#91610d','#ffe075','#e0ac20','#87591a']);
+ block(-1.06,1.06,1.42,1.95,.45,2.65,['#ffdb5d','#ad7a1d','#ffe48e','#f0bd29','#80550e']);
+ // Grill + bright headlights.
+ block(-.97,.97,1.1,1.48,2.66,2.80,['#4a4944','#554e32','#5c5d43','#313a35','#313b32']);
+ for(const side of [-.72,.72])block(side-.21,side+.21,1.38,1.70,2.79,2.86,'#f6ffde');
+ // Driver cab enclosed in solid amber glass.
+ block(-.92,.92,1.47,2.87,-1.58,.42,['#24505b','#214350','#4e7f8d','#3f6d78','#1c3542']);
+ block(-.91,.91,2.85,3.02,-1.67,.63,['#ffd97f','#906c25','#ffe7ab','#d8ab45','#815b11']);
+ block(-.84,.84,1.64,2.66,.46,.54,['#7ddce1','#28626e','#afe9e5','#6bbac5','#245c69']);
+ block(-.84,.84,1.65,2.65,-1.69,-1.60,['#3e8499','#22485c','#81c4ce','#60b4be','#1b4153']);
+ for(const side of [-1,1])block(side*.94-.035,side*.94+.035,1.60,2.72,-1.47,.30,['#87d7d6','#26636f','#4fa4b6','#70cbd2','#1b6174']);
+ // Exhaust pipe, mud guards, fender accents and safety lamp.
+ block(-.91,-.65,1.92,3.24,1.55,1.85,['#3e4645','#202b32','#606c66','#4f6053','#141d23']);
+ block(-1.17,1.17,1.10,1.27,-2.59,-2.22,'#ffe58f');
+ block(-.18,.18,3.05,3.22,-.65,-.32,'#ffcc44');
+ faces.sort((a,b)=>b.d-a.d);for(const f of faces)poly(f.pts,f.fill);
+ const p=project(local(0,1.86,-2.57));
+ if(p){ctx.save();ctx.textAlign='center';ctx.fillStyle='#fff5ad';ctx.font='900 '+Math.max(9,Math.min(21,camera.zoom/p.depth*.4))+'px system-ui';ctx.fillText("BEADY",p.x,p.y);ctx.restore()}
+}
+function drawCar(){if(selectedCar().type==='tractor'){drawBeadysTractor();return;}if(selectedCar().type==='golf'){drawGolfCart();return;}if(selectedCar().type==='bus'||selectedCar().type==='phantom'){drawSolidShowcaseVehicle(selectedCar().type);return;}if(selectedCar().type==='boat'){drawPowerBoat();return;}let faces=[];const cs=currentStyle(),vehicle=selectedCar(),kind=vehicle.type;const bodyW=1,bodyL=1,bodyH=1;
 function face(points,color){let pts=points.map(v=>local(v[0]*bodyW,v[1]*bodyH,v[2]*bodyL));let depth=0;for(let p of pts)depth+=(p.x-camera.eye.x)*camera.forward.x+(p.y-camera.eye.y)*camera.forward.y+(p.z-camera.eye.z)*camera.forward.z;faces.push({pts,color,depth:depth/pts.length})}
 function box(x0,x1,y0,y1,z0,z1,colors){let [top,left,right,front,back]=colors;
 face([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]],top);
