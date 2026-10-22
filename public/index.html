@@ -758,8 +758,10 @@ function applyCloudProfile(data){
  syncCarSmoke();migrateCoinAchievements();if(!account.redPickupRewardV3){account.achievementClaims=account.achievementClaims.filter(i=>i!==15);account.redPickupRewardV3=true;}
  if(data.playerId){competitionId=data.playerId;localStorage.setItem(COMPETITION_ID_KEY,competitionId)}
  try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}
+ if(cloudLoggedIn)scheduleCloudSave();
  best=account.verifiedBest||0;bestEl.textContent=String(best).padStart(6,'0');try{localStorage.setItem('drift-boss-premium-best',String(best))}catch(e){}
  updateCoinHud();resize();
+ if(onlineApi)syncOnlineVerifiedBest();
 }
 async function flushCloudSave(){
  if(!cloudLoggedIn)return;
@@ -1127,10 +1129,10 @@ function renderProfile(){
  $('playerForm').addEventListener('submit',e=>{e.preventDefault();const name=cleanName($('nameInput').value);if(name.length<2){$('profileNote').textContent='Choose at least 2 characters.';return;}account.nickname=name;account.fullName=String($('fullNameInput').value||'').trim().slice(0,48);account.showFullName=$('showFullName').checked&&account.fullName.length>=3;saveAccount();$('profileNote').textContent='Saved! Your public nickname is '+name+'. Your next completed run can appear worldwide.';publishScore(true);});
 }
 function renderBoard(){
- const rows=(onlineApi?globalBoard:(account.nickname&&account.verifiedBest>0?[{name:account.nickname,score:account.verifiedBest}]:[])).slice(0,50);
+ const rows=(onlineApi?globalBoard:[]).slice(0,50);
  const escapeHTML=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  modalContent.innerHTML=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:15px"><span style="font-size:34px">🏆</span><div><div style="font-size:18px;font-weight:950;letter-spacing:.08em">WORLDWIDE HALL OF FAME</div><div class="tierSub">CLASSIC · ALL-TIME TOP 50 · HIGH SCORES</div></div></div>
- <div class="walletBar" id="leaderboardNote" style="color:#baffea">${escapeHTML(boardStatus)}</div>
+ <div class="walletBar" id="leaderboardNote" style="color:#baffea">${escapeHTML(boardStatus)} · Prior scores normalized −60% once · 1× scoring</div>
  <div>${rows.length?rows.map((s,i)=>`<div class="leaderRow ${s.name===account.nickname?'self':''}"><span class="rank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</span><span>${escapeHTML(s.name)}${s.fullName?'<span class="leaderReal">'+escapeHTML(s.fullName)+'</span>':''}</span><strong>${money(s.score)}</strong></div>`).join(''):'<p class="modalText">No public scores yet. Be the first to complete a run!</p>'}</div>
  ${!account.nickname?'<button type="button" class="primaryMini" id="boardSetName" style="margin:17px 0 0">CHOOSE MY NICKNAME</button>':''}
  <button type="button" class="primaryMini" id="boardRefresh" style="margin:17px 0 0">REFRESH LIVE SCORES</button>`;
@@ -1162,8 +1164,37 @@ async function initOnlineLeaderboard(){
  try{const data=await onlineApi.load();recordReleaseEvent(data);globalBoard=data.top||[];boardStatus='LIVE WORLDWIDE · '+(data.players||0)+' RACERS';onlineNoticeEl.textContent='LIVE WORLDWIDE LEADERBOARD';}
  catch(e){boardStatus='OFFLINE PREVIEW · Publish the Netlify Functions to activate global scores.';onlineNoticeEl.textContent='ONLINE LEADERBOARD NOT CONNECTED';console.warn('Leaderboard not yet connected:',e)}
  heartbeat();
+ syncOnlineVerifiedBest();
 }
-
+async function syncOnlineVerifiedBest(){
+ if(!onlineApi)return;
+ try{
+  const result=await onlineApi.myBest();
+  if(Number.isInteger(result.verifiedBest)&&result.verifiedBest>account.verifiedBest){
+   account.verifiedBest=result.verifiedBest;best=Math.max(best,result.verifiedBest);bestEl.textContent=String(best).padStart(6,'0');saveAccount();
+  }
+  $('submitHighScoreStatus').textContent=result.verifiedBest>result.publishedScore?'VERIFIED BEST READY TO SUBMIT':result.verifiedBest>0?'YOUR BEST IS ON THE BOARD':'Finish a run to verify your score';
+ }catch(e){$('submitHighScoreStatus').textContent='Online verification unavailable';}
+}
+const submitHighScoreBtn=$('submitHighScore');
+submitHighScoreBtn.addEventListener('click',async()=>{
+ const feedback=$('submitHighScoreStatus');
+ if(!account.nickname||account.nickname.length<2){feedback.textContent='Choose a nickname in your profile first';if(state!=='playing')openModal('profile');return;}
+ if(!onlineApi){feedback.textContent='Connect to the online leaderboard first';return;}
+ submitHighScoreBtn.disabled=true;feedback.textContent='Checking verified best…';
+ try{
+  const result=await onlineApi.submitBest();
+  const uploaded=Number(result.publishedScore)||0;
+  if(result.top)globalBoard=result.top;
+  account.verifiedBest=Math.max(Number(account.verifiedBest)||0,uploaded);
+  best=Math.max(best,uploaded);bestEl.textContent=String(best).padStart(6,'0');saveAccount();
+  feedback.textContent='✓ PUBLISHED '+uploaded.toLocaleString()+' · WORLD RANK #'+result.rank;
+  boardStatus='LIVE WORLDWIDE · Your score is now ranked #'+result.rank;
+  if(state==='dead')updateDeathLeaderboard();
+  if(modalPage==='board'&&modalWrap.classList.contains('open'))renderBoard();
+ }catch(e){feedback.textContent=e.message||'Could not submit verified score';}
+ finally{submitHighScoreBtn.disabled=false;}
+});
 function prepareRoad(){seed=765239;fxSeed=318791;tiles=[];runs=[];ramps=[];bananas=[];coins=[];branches=[];loops=[];activeLoop=null;orangeSeeded=false;purpleSeeded=false;purpleAwarded.clear();lastBranchTurn=-100;lastRampTurn=-20;redSeeded=false;gen={x:0,z:0,dir:'z',turn:0,s:0};progress=0;generateRun();extendRoad(roadAhead)}
 function restart(){
  if(resetPending||resetBusy)return;
