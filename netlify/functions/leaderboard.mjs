@@ -24,6 +24,20 @@ async function activePlayers(activity,now=Date.now()){
  }while(cursor&&read<3500);
  return online;
 }
+// Virtual racers are openly labelled NPCs, never represented as real sessions.
+function scheduledVirtualRacers(now=Date.now()){
+ const hour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Dublin',hour:'2-digit',hourCycle:'h23'}).format(new Date(now)));
+ return hour>=8&&hour<23?4:0;
+}
+async function registeredAccountCount(){
+ const cloud=getStore({name:'drift-boss-cloud-accounts-v1',consistency:'strong'});
+ let cursor,total=0;
+ do{
+  const page=await cloud.list({prefix:'users/',...(cursor?{cursor}:{})});
+  total+=page.blobs.length;cursor=page.cursor;
+ }while(cursor&&total<50000);
+ return total;
+}
 function eventSettings(now=Date.now()){
  return {scoreMultiplier:SCORE_MULTIPLIER,halloweenCoins:now>=HALLOWEEN_START&&now<HALLOWEEN_END,halloweenEnds:HALLOWEEN_END};
 }
@@ -75,7 +89,7 @@ export default async function leaderboard(req){
     const event=eventSettings();
     if(req.method==='GET'){
       const all=await scores(store);
-      return json({online:true,top:all.slice(0,50).map(({name,fullName,score,updatedAt})=>({name,fullName,score,updatedAt})),players:all.length,onlineNow:await activePlayers(activityStore()),event,serverNow:Date.now()});
+      return json({online:true,top:all.slice(0,50).map(({name,fullName,score,updatedAt})=>({name,fullName,score,updatedAt})),players:all.length,registeredAccounts:await registeredAccountCount(),onlineNow:await activePlayers(activityStore()),virtualRacers:scheduledVirtualRacers(),event,serverNow:Date.now()});
     }
     if(req.method!=='POST')return bad('Method not allowed',405);
     if(Number(req.headers.get('content-length')||0)>2048)return bad('Too large',413);
@@ -92,7 +106,7 @@ export default async function leaderboard(req){
       const activeSeconds=previous&&now-previous>0&&now-previous<=45000?(now-previous)/1000:0;
       const playtimeSeconds=Math.min(100000000,Math.max(0,Number(last?.playtimeSeconds)||0)+activeSeconds);
       await activity.setJSON(key,{lastSeen:now,playtimeSeconds});
-      return json({onlineNow:await activePlayers(activity,now),playtimeSeconds,serverNow:now});
+      return json({onlineNow:await activePlayers(activity,now),virtualRacers:scheduledVirtualRacers(now),playtimeSeconds,serverNow:now});
     }
     // Global gamechat: public to read, verified-score gated to post.
     // Server-side daily slots enforce a maximum of two messages per player per UTC day.
