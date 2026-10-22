@@ -1175,7 +1175,8 @@ function updateDeathLeaderboard(){
  const box=$('deathTopTen');if(!box)return;
  const esc=t=>String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const top=globalBoard.slice(0,10);
- box.innerHTML=top.length?'<h3>🏆 WORLD TOP TEN · CAN YOU BE #1?</h3><p style="font-size:13px;color:#aaffd9;margin:4px 0 10px;text-align:center">🟢 '+(onlinePlayers===null?'CONNECTING…':onlinePlayers+' REAL PLAYERS ONLINE')+'</p>'+top.map((p,i)=>'<div class="deathRank"><b>'+(i<3?['🥇','🥈','🥉'][i]:'#'+(i+1))+'</b><b>'+esc(p.name)+'</b><span>'+money(p.score)+'</span></div>').join('')+'<p style="text-align:center;color:#f0c96b;font-size:11px;margin:9px 0 0">YOUR SCORE · '+money(score)+' · CHASE THE PODIUM!</p>':'<p style="font-size:12px;text-align:center">🏆 WORLD TOP TEN · Online scores loading</p>';
+ box.innerHTML=top.length?'<h3>🏆 WORLD TOP TEN · CAN YOU BE #1?</h3>'+top.map((p,i)=>'<div class="deathRank"><b>'+(i<3?['🥇','🥈','🥉'][i]:'#'+(i+1))+'</b><b>'+esc(p.name)+'</b><span>'+money(p.score)+'</span></div>').join('')+'<p style="text-align:center;color:#f0c96b;font-size:11px;margin:9px 0 0">YOUR SCORE · '+money(score)+' · CHASE THE PODIUM!</p>':'<p style="font-size:12px;text-align:center">🏆 WORLD TOP TEN · Online scores loading</p>';
+ box.insertAdjacentHTML('afterbegin','<p style="font-size:13px;color:#aaffd9;margin:4px 0 10px;text-align:center">🟢 '+(onlinePlayers===null?'CONNECTING…':onlinePlayers+' REAL PLAYERS ONLINE')+'</p>');
 }
 function displayOverlay(kind){
  state=kind;overlay.classList.remove('hidden');overlay.classList.remove('intro');shell.classList.remove('menu');driftEl.style.opacity=0;bar.style.opacity=0;
