@@ -243,31 +243,6 @@ export default async function leaderboard(req){
       await store.delete('verified-best/'+id);
       return json({deleted:true});
     }
-    // Publish only the highest server-verified run for this player ID.
-    // One scores/<id> record exists; publishing again replaces it in place.
-    if(data.action==='myBest'){
-      const saved=await normalizeScore(store,await store.get('scores/'+id,{type:'json'}));
-      const verified=await store.get('verified-best/'+id,{type:'json'});
-      return json({verifiedBest:Math.max(Number(verified?.score)||0,Number(saved?.score)||0),publishedScore:Number(saved?.score)||0,hasVerifiedRun:!!verified});
-    }
-    if(data.action==='submitBest'){
-      const displayName=cleanName(data.name);
-      if(displayName.length<2)return bad('Choose a nickname before publishing your score');
-      if(await isBanned(store,id))return bad('This player has been banned from the rankings',403);
-      const reset=await store.get('resets/'+id,{type:'json'});
-      const previouslySaved=await normalizeScore(store,await store.get('scores/'+id,{type:'json'}));
-      const verified=await store.get('verified-best/'+id,{type:'json'});
-      if(!previouslySaved&&!verified)return bad('Finish a run with an online connection to verify your best score first',409);
-      if(reset&&Number(verified?.verifiedAt||0)<=Number(reset.at)&&!previouslySaved)return bad('Finish a new run after resetting your account',409);
-      const score=Math.max(Number(verified?.score)||0,Number(previouslySaved?.score)||0);
-      if(!Number.isInteger(score)||score<1)return bad('No verified positive score available',409);
-      const fullName=cleanFull(data.fullName);
-      const showFullName=data.showFullName===true&&fullName.length>=3;
-      const published={...previouslySaved,id,name:displayName,fullName,showFullName,score,updatedAt:new Date().toISOString(),[NORMALIZED_SCORE_FLAG]:true};
-      await store.setJSON('scores/'+id,published);
-      const all=await scores(store);
-      return json({saved:true,publishedScore:score,verifiedBest:score,rank:all.findIndex(row=>row.id===id)+1,players:all.length,top:all.slice(0,50).map(({name,fullName,score})=>({name,fullName,score}))});
-    }
     const name=cleanName(data.name),fullName=cleanFull(data.fullName),showFullName=data.showFullName===true&&fullName.length>=3;
     if(!isID(id)||name.length<2)return bad('Choose a nickname of at least two characters');
     if(await isBanned(store,id))return bad('This player account has been permanently banned from the leaderboard',403);
@@ -302,11 +277,18 @@ export default async function leaderboard(req){
       const key='scores/'+id,prior=await normalizeScore(store,await store.get(key,{type:'json'}));
       // Recheck persistent ban after run verification and immediately before writing.
       if(prior?.bannedAt||await isBanned(store,id))return bad('This player account has been permanently banned from the leaderboard',403);
-      const existingBest=await store.get('verified-best/'+id,{type:'json'});
-      const best=Math.max(score,Number(existingBest?.score)||0,Number(prior?.score)||0);
-      await store.setJSON('verified-best/'+id,{id,score:best,verifiedAt:now});
+      // Every verified finished run is published immediately, replacing the
+      // same player ID's prior record if the run improves their score.
+      // Previously published scores remain intact; this reset affects
+      // PERSONAL BEST displays, not public leaderboard history.
+      const previousScore=Number(prior?.score)||0;
+      const best=Math.max(score,previousScore);
+      await store.setJSON(key,{...prior,id,name,fullName,showFullName,score:best,[NORMALIZED_SCORE_FLAG]:true,updatedAt:new Date().toISOString()});
+      // Retire the old manual-submission cache so its stale highscore
+      // cannot be resurrected by an older client after this update.
+      await store.delete('verified-best/'+id);
       const all=await scores(store);
-      return json({saved:true,verifiedBest:best,publishedScore:Number(prior?.score)||0,isPersonalBest:score>Math.max(Number(existingBest?.score)||0,Number(prior?.score)||0),pendingPublication:best>(Number(prior?.score)||0),players:all.length,top:all.slice(0,10).map(({name,fullName,score})=>({name,fullName,score}))});
+      return json({saved:true,score:best,rank:all.findIndex(x=>x.id===id)+1,isPersonalBest:score>previousScore,players:all.length,top:all.slice(0,10).map(({name,fullName,score})=>({name,fullName,score}))});
     }
     return bad('Unknown action');
   }catch(err){
