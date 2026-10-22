@@ -187,24 +187,20 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 <div id="garageLaunch"></div>
 <div class="menuTools"><button id="openShopMenu" type="button">🛠<span>GARAGE</span></button><button id="openAchievementsMenu" type="button">✦<span>ACHIEVEMENTS</span></button><button id="openChatMenu" type="button">💬<span>GAMECHAT</span></button><button id="openBoardMenu" type="button">🏆<span>LEADERBOARD</span></button><button id="openProfileMenu" type="button">☁ SAVE / LOGIN</button></div><div id="menuCarHint">CLICK THE CAR TO SAVE YOUR PROGRESS OR CHOOSE A NAME</div>
 <div id="releaseNotes" hidden role="dialog" aria-modal="true" aria-labelledby="releaseHeading"><section class="releaseCard">
- <div style="color:#ffc970;font-weight:1000;letter-spacing:.17em">HAMOS DRIFT BOSS · MOTORSPORT UPDATE 2.0</div>
- <h2 id="releaseHeading">RACING<br><span style="color:#8de8ff">EVOLUTION</span> 🏁</h2>
+ <div style="color:#ffc970;font-weight:1000;letter-spacing:.17em">HAMOS DRIFT BOSS · WATER & RACING UPDATE 3.0</div>
+ <h2 id="releaseHeading">WAVE<br><span style="color:#8de8ff">RACERS</span> 🚤</h2>
  <p style="font-weight:900;color:#fff0b3">🚀 SHARE THE GAME WITH YOUR FRIENDS! Every racer matters — send <a style="color:#8fffea" href="https://hamosdriftboss.netlify.app">hamosdriftboss.netlify.app</a> to your group chats and compete for the worldwide top ten.</p>
  <button id="releaseCopy" type="button">📋 COPY GAME LINK</button>
  <ul>
- <li>🏎️ Garage refresh: Rally Beast, flashing Police Pursuit, Monster Wheels, F1 and twin blue companion racer replace old models</li>
- <li>🚌 Improved longer Dublin Bus 44, solid Midnight Phantom and futuristic black Lamborghini</li>
- <li>🌸 Tokyo Drift has pink cherry-blossom pickups; the F1 has blue energy orbs; others have spinning gold coins</li>
- <li>🪙 Engine upgrades trigger an arcade coin-blaster celebration above the car</li>
- <li>🎮 Each car remembers its own equipped drift; animated drift previews have been removed</li>
- <li>⚡ Banana, slushie and money trails use fewer particles for smoother performance</li>
- <li>🌈 All coloured special roads now glow with powerful neon auras</li>
- <li>💜 Purple Turbo is longer and offers instant pinpoint steering with no sliding drift</li>
- <li>🎢 Orange coaster loops travel forwards through a huge arch instead of returning to the entry point</li>
- <li>💰 Dark Mode / Tokyo atmosphere achievement rewards are now 20,000 and 200,000 Garage coins</li>
- <li>✍️ Choose a public racing nickname before your first run so your high score can be submitted</li>
- <li>💬 New global gamechat: verified score above 20K required to post, 2 chats per day, 10 words per chat</li>
- <li>🏆 Leaderboards and optional cloud saves remain available. Existing wallet, cars and records are preserved</li>
+ <li>🚤 Lamborghini replaced by the premium Power Boat — the racetrack becomes shimmering ocean water when you drive it.</li>
+ <li>🚌 Dublin Bus 44 rebuilt from scratch: longer solid coach, route sign, passenger windows, doors, wheels and stable rendering. Midnight Phantom cockpit is solid.</li>
+ <li>🏎️ Twin Racers' blue companion now follows closer, steers smoothly and stays on the course.</li>
+ <li>💜 Purple Turbo now adds 20% speed and 30% extra score while keeping normal drifting; orange loops are back to the original design.</li>
+ <li>✨ Removed upgrade blaster animation and retired the old banana, slushie and money trails.</li>
+ <li>🎨 Banana achievement: Yellow Slush Trail. Green Drift achievement: Mean Green Paint. Red Pickups achievement: 40,000 coins.</li>
+ <li>🛒 Nine new separately purchasable drifts inspired by Rally Beast, Police Patrol, Monster Wheels, Bus 44, Phantom, Tokyo, F1, Twin Racers and Power Boat.</li>
+ <li>💬 Gamechat is now above Garage. Everyone can read; only players with 25,000 verified points can type (2 posts daily, 10 words maximum).</li>
+ <li>🏆 Leaderboard and optional cloud accounts are preserved, including your garage purchases and each car's equipped drift.</li>
  </ul>
  <label><input type="checkbox" id="releaseRead">I have read the update notes.</label>
  <button id="releaseConfirm" type="button" disabled style="width:100%">CONFIRM & START RACING →</button>
@@ -315,7 +311,6 @@ account.carSmoke=Array.isArray(account.carSmoke)&&account.carSmoke.length===10
 function syncCarSmoke(){const index=account.carEquipped||0;const trail=account.carSmoke[index]||0;account.smokeEquipped=trail!==19&&account.smokeOwned.includes(trail)?trail:0}
 account.smokeOwned=account.smokeOwned.filter(i=>i!==19);
 if(account.smokeEquipped===19)account.smokeEquipped=0;
-syncCarSmoke();
 syncCarSmoke();
 function saveAccount(){try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}scheduleCloudSave();}
 function activeTheme(){const idx=(state==='menu'&&modalWrap?.classList.contains('open')?previewAtmosIndex:null)??account.atmosEquipped;return ALL_THEMES[idx]||ATMOSPHERES[0]}
@@ -1019,9 +1014,9 @@ function renderShop(){
  <p class="modalText">Earn coins by collecting bolts. Each car remembers its own equipped drift. Atmospheric worlds can still be previewed.</p>${previewBox}
  <div class="tierGrid">${list.map((v,i)=>{
  if(isSmoke&&i===19)return '';const name=isSmoke?v[0]:v.name,price=isSmoke?smokeSalePrice(i):0,desc=isSmoke?v[2]:v.desc,owns=account[shopTab+'Owned'].includes(i)||garageFree,selected=isSmoke?equippedSmokeForCar()===i:account.atmosEquipped===i;
- const achIndex=isSmoke?i-SMOKE_OPTIONS.length:-1,achSymbols=['🛞','🏎️','🔥','🎵','🎣','🕳️','🎢','🍌','🥤','💸'],swatch=isSmoke&&achIndex>=0&&achIndex<BONUS_SMOKE.length
+ const achIndex=isSmoke?i-SMOKE_OPTIONS.length:-1,achSymbols=['🛞','🏎️','🔥','🎵','🎣','🕳️','🎢','🥤','🎨',''],swatch=isSmoke&&achIndex>=0&&achIndex<BONUS_SMOKE.length
  ?'<div class="themePreview achievementSwatch" data-symbol="'+achSymbols[achIndex]+'" style="--swatch1:'+BONUS_COLORS[achIndex]+';--swatch2:'+(achIndex===5?'#9e8ceb':['#e9c79a','#ff8d98','#ffd958','#5ff5fc','#b6fcff','#4b376d','#e7fdff','#fff7ad','#ffacd9','#b9ffcc'][achIndex])+'"></div>'
- :isSmoke?'<div class="themePreview" style="background:linear-gradient(90deg,#263448,'+(['#7f9aad','#e9f3ff','#5aeeff','#cf85ff','#ffae48','#aaff73','#9ceeff','#ff70e1','#fff7ca','#ba88ff'][i]||'#83dffc')+')"></div>'
+ :isSmoke?'<div class="themePreview" style="background:linear-gradient(90deg,#263448,'+(i>=20?CAR_TRAIL_COLORS[i-20]:['#7f9aad','#e9f3ff','#5aeeff','#cf85ff','#ffae48','#aaff73','#9ceeff','#ff70e1','#fff7ca','#ba88ff'][i]||'#83dffc')+')"></div>'
  :'<div class="themePreview" style="background:linear-gradient(90deg,'+v.bg.join(',')+')"></div>';
  const exclusive=isSmoke?i>=SMOKE_OPTIONS.length&&i<20:false,afford=garageFree||(!exclusive&&account.wallet>=price);
  return `<div class="tierCard ${selected?'equipped':''}"><div class="tierTitle">${i+1}. ${name}</div>${swatch}<div class="tierSub">${desc}</div><div class="price">${isSmoke&&i>=6&&i<SMOKE_OPTIONS.length?'🔥 SALE · ':''}${price===0||garageFree?'FREE':money(price)+' coins'}${isSmoke&&i>=6&&i<SMOKE_OPTIONS.length?' <s style="opacity:.5;font-size:11px">'+money(v[1])+'</s>':''}</div><div class="tierActions">${isSmoke?'':`<button type="button" class="previewMini ${(previewIndex===i)?'active':''}" data-preview="${i}">${previewIndex===i?'PREVIEWING':'PREVIEW'}</button>`}<button type="button" data-buy="${i}" ${selected?'disabled':''} ${(owns||afford)?'':'disabled'}>${selected?'✓ EQUIPPED':owns?'EQUIP':afford?'BUY':exclusive?'ACHIEVEMENT':'NEED '+money(price-account.wallet)}</button></div></div>`;
@@ -1182,7 +1177,7 @@ async function confirmAccountReset(){
   const result=await onlineApi.deleteAccount();
   if(!result?.deleted)throw Error('Could not remove your leaderboard score.');
   // Preserve all local files until the cloud reset has been acknowledged.
-  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true,coinAchievementMigrationV2:true,motorsportNewsSeen:true,carSmoke:Array(10).fill(0)};
+  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true,coinAchievementMigrationV2:true,motorsportNewsSeen:true,watercraftNewsSeen:true,redPickupRewardV3:true,carSmoke:Array(10).fill(0)};
   if(cloudLoggedIn)await cloudRequest({action:'reset',profile:blankProfile});
   resetGeneration++;
   onlineRunFinished=true;onlineRunPromise=null;
@@ -2066,18 +2061,6 @@ function drawTwinChase(){
  poly(w,'#1386ff');poly(top,'#143452');poly(bumper,'#63dafa');segment(pt(-1.03,1.15,-1.68),pt(1.03,1.15,-1.68),'#92e8ff',3);segment(pt(-.65,1.66,1),pt(.65,1.66,1),'#e9ffff',2);
  for(const a of [-1.21,1.21])for(const z of [-1.25,1.25])poly([pt(a-.21,.23,z-.47),pt(a+.21,.23,z-.47),pt(a+.21,.23,z+.47),pt(a-.21,.23,z+.47)],'#081626');
  for(const a of [-.72,.72])segment(pt(a,.98,1.82),pt(a+.24,.98,1.92),'#e8ffff',2.5);
-}
-function drawUpgradeCoinBlaster(){
- if(state!=='playing'||upgradeFlash<=0)return;
- const base=project(local(0,2.0,.12));if(!base)return;
- const pct=(1.35-upgradeFlash)/1.35;
- ctx.save();ctx.fillStyle='#b1f7ff';ctx.fillRect(base.x-6,base.y-23,12,22);
- ctx.fillStyle='#42a9ff';ctx.fillRect(base.x-12,base.y-28,24,9);
- for(let i=0;i<8;i++){
-  const f=(pct*1.9+i/8)%1,x=base.x+(i%2?1:-1)*f*48+Math.sin(i*7)*9,y=base.y-26-f*112;
-  ctx.globalAlpha=1-f;ctx.fillStyle='#ffd04b';ctx.beginPath();ctx.ellipse(x,y,5.5*(.5+.5*Math.abs(Math.cos(time*14+i))),6.7,0,0,TAU);ctx.fill();
- }
- ctx.restore();
 }
 function updateFxQuality(dt){fxAvg=fxAvg*.94+Math.min(.06,dt)*.06;const desired=fxAvg>.032?.57:fxAvg>.026?.76:1;fxQuality+=(desired-fxQuality)*.06}
 function sampleFxTrail(){
