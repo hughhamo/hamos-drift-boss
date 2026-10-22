@@ -2157,7 +2157,7 @@ function sampleFxTrail(){
  while(fxPath.length&&(time-fxPath[0].at>2.0||fxPath.length>65))fxPath.shift();
 }
 function drawFxRibbon(){
- const k=account.smokeEquipped;if(state!=='playing'||![15,16].includes(k)||fxPath.length<2)return;
+ const k=account.smokeEquipped;if(state!=='playing'||selectedCar().type==='boat'||![15,16].includes(k)||fxPath.length<2)return;
  const points=fxPath.filter(p=>p.tier===k&&time-p.at<(k===16?2.9:1.8));if(points.length<2)return;
  const rails=[[],[]];
  for(const p of points){const sideX=Math.cos(p.heading),sideZ=-Math.sin(p.heading),sep=k===16?.78:.57,height=k===16?.3+.48*Math.sin((time-p.at)*2.2):.19;
@@ -2261,7 +2261,16 @@ function drawSkids(){
 
 function drawAchievementSkid(m,tier,fade,i){
  const j=tier-10,A=project(vec(m.x,.13,m.z)),B=project(vec(m.x+m.dx,.13,m.z+m.dz));
- if(tier>=20){if(!A||!B)return;ctx.save();ctx.strokeStyle=CAR_TRAIL_COLORS[tier-20]||'#a0eaff';ctx.globalAlpha=fade*.9;ctx.lineWidth=tier===23?5.5:3.8;ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=4;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();if(tier===27){ctx.strokeStyle='#2d8ffe';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(A.x+3,A.y+3);ctx.lineTo(B.x+3,B.y+3);ctx.stroke()}ctx.restore();return;}
+ if(tier>=20){
+  if(!A||!B)return;
+  ctx.save();
+  const shade=tier===21?(Math.floor(time*6+i)%2?'#ff425b':'#4ebdff'):tier===23?(i%2?'#ffdd76':'#4bdce7'):CAR_TRAIL_COLORS[tier-20]||'#a0eaff';
+  ctx.strokeStyle=shade;ctx.globalAlpha=fade*.86;
+  ctx.lineWidth=tier===23?5:tier===24?5.2:3.3;ctx.shadowColor=shade;ctx.shadowBlur=tier===21||tier===24?5:2;
+  ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+  if(tier===24||tier===27){ctx.strokeStyle=tier===24?'#c2aaff':'#f3e581';ctx.lineWidth=1.7;ctx.beginPath();ctx.moveTo(A.x+3,A.y+3);ctx.lineTo(B.x+3,B.y+3);ctx.stroke();}
+  ctx.restore();return;
+}
  if(!A||!B)return;
  ctx.save();ctx.globalAlpha=fade;ctx.lineWidth=j===5?9:j===0?1:3;
  ctx.strokeStyle=BONUS_COLORS[j]||'#fff';ctx.beginPath();ctx.moveTo(A.x,A.y);
@@ -2274,10 +2283,23 @@ function drawAchievementSmoke(c,p,r,tier,fade,i){
  if(tier>=20){
   const palette=CAR_TRAIL_COLORS[tier-20]||'#bcfaff';
   c.save();c.globalAlpha=fade*.95;c.fillStyle=palette;c.strokeStyle=palette;
-  if(tier===25){for(let n=0;n<5;n++){const theta=n*TAU/5;c.beginPath();c.ellipse(p.x+Math.cos(theta)*r*.4,p.y+Math.sin(theta)*r*.4,Math.max(2,r*.32),Math.max(2,r*.20),theta,0,TAU);c.fill()}}
+  if(tier===21){ // Alternating police roof-light flashes
+   c.fillStyle=(Math.floor(time*6+i)%2===0?'#ff355a':'#4bbdff');c.beginPath();
+   c.arc(p.x,p.y,Math.max(2,r*.75),0,TAU);c.fill();c.lineWidth=1.5;
+   c.beginPath();c.arc(p.x,p.y,r*1.45,0,TAU);c.stroke();
+  }
+  else if(tier===24){ // Phantom rotating violet double aura
+   for(let v=0;v<2;v++){c.strokeStyle=v?'#9874ff':'#d5c8ff';c.lineWidth=1.2;
+    c.beginPath();c.ellipse(p.x,p.y,r*(1.1+v*.65),Math.max(2,r*.42),time*1.8+v*PI/2,0,TAU);c.stroke();}
+  }
+  else if(tier===25){for(let n=0;n<5;n++){const theta=n*TAU/5;c.beginPath();c.ellipse(p.x+Math.cos(theta)*r*.4,p.y+Math.sin(theta)*r*.4,Math.max(2,r*.32),Math.max(2,r*.20),theta,0,TAU);c.fill()}}
+  else if(tier===27){ // Golf-cart fireflies: compact warm glowing sparks
+   c.fillStyle=i%3?'#fced87':'#adff75';c.beginPath();c.arc(p.x,p.y,Math.max(2,r*.46),0,TAU);c.fill();
+   if(i%3===0){c.strokeStyle='#f0efb2';c.lineWidth=1.2;c.beginPath();c.moveTo(p.x-r,p.y);c.lineTo(p.x+r,p.y);c.moveTo(p.x,p.y-r);c.lineTo(p.x,p.y+r);c.stroke();}
+  }
+  else if(tier===23){c.fillStyle=i%2?'#4ceae5':'#ffd96f';c.fillRect(p.x-r*.55,p.y-r*.18,Math.max(2,r*1.1),Math.max(2,r*.36));}
   else if(tier===22||tier===28){c.beginPath();c.ellipse(p.x,p.y,r*1.5,r*.58,time,0,TAU);c.fill();}
   else{c.beginPath();c.arc(p.x,p.y,Math.max(2,r*.82),0,TAU);c.fill();}
-  if(tier===21||tier===27){c.fillStyle='#1e74f3';c.fillRect(p.x-r*.7,p.y-r*.4,Math.max(2,r*.5),Math.max(2,r*.8))}
   c.restore();return;
  }
  const j=tier-10;c.save();c.globalAlpha=fade;c.fillStyle=BONUS_COLORS[j]||'#fff';c.strokeStyle=BONUS_COLORS[j]||'#fff';c.lineWidth=2;
