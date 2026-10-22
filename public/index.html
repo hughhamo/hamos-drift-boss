@@ -174,6 +174,10 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 .cloudStatus{color:#a6eaff;font-size:12px;margin:10px 0}.cloudForm{display:grid;gap:9px;grid-template-columns:1fr 1fr;margin:12px 0}.cloudForm input{min-width:0;background:#06182d;border:1px solid #82a6c567;color:#fff;border-radius:9px;padding:11px}
 .cloudForm button{grid-column:1/-1;background:#8effd7;color:#061725;border:0;border-radius:9px;padding:12px;font-weight:950;cursor:pointer}
 @media(max-width:500px){.cloudForm{grid-template-columns:1fr}}
+#submitHighScore{display:block;background:linear-gradient(130deg,#8df1ed,#c7ffcb);color:#082535;border:0;border-radius:7px;padding:6px 9px;margin-top:5px;cursor:pointer;font-size:10px;font-weight:1000;letter-spacing:.04em;white-space:nowrap;box-shadow:0 0 10px #59ffe04a}
+#submitHighScore:disabled{opacity:.55;cursor:wait}
+#submitHighScoreStatus{display:block;max-width:190px;font-weight:750!important;line-height:1.3;font-size:9px!important;color:#afffe2!important}
+@media(max-width:620px){#submitHighScore{font-size:8px;padding:5px;white-space:normal}#submitHighScoreStatus{max-width:120px;font-size:8px!important}}
 #onlineCounter{position:fixed;z-index:24;top:100px;right:16px;min-width:168px;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:11px 16px;border-radius:13px;border:2px solid #58ffd6a8;background:linear-gradient(120deg,#063e46f5,#0b192bf2);box-shadow:0 0 24px #39f9ba4f,0 12px 32px #0008;color:#fff;text-shadow:0 1px 4px #051b26;font:950 20px system-ui;letter-spacing:.02em;pointer-events:none}
 #onlineCounter small{flex-basis:100%;text-align:center;color:#9effd9;letter-spacing:.14em;font-size:9px;font-weight:950}
 #onlineCounter .livePulse{width:10px;height:10px;background:#5dffb3;border-radius:50%;box-shadow:0 0 12px #38ffd2;animation:livePulse 1.7s ease-in-out infinite}
@@ -184,7 +188,7 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 <body>
 <div id="shell">
 <canvas id="game" aria-label="Play Hamos Drift Boss"></canvas>
-<div class="hud"><div class="logo">HAMOS <b>DRIFT BOSS</b><small>ONLINE COMPETITION</small></div><div class="right"><div class="metric"><small>SCORE</small><strong id="score">000000</strong></div><div class="metric"><small>BEST</small><strong id="best">000000</strong></div><button id="sound" class="sound" title="Toggle sound" aria-label="Toggle sound">🔊</button></div></div>
+<div class="hud"><div class="logo">HAMOS <b>DRIFT BOSS</b><small>ONLINE COMPETITION</small></div><div class="right"><div class="metric"><small>SCORE</small><strong id="score">000000</strong></div><div class="metric bestMetric"><small>BEST</small><strong id="best">000000</strong><button id="submitHighScore" type="button" title="Publish your best server-verified result to the worldwide leaderboard">SUBMIT HIGH SCORE ↑</button><small id="submitHighScoreStatus" role="status" aria-live="polite"></small></div><button id="sound" class="sound" title="Toggle sound" aria-label="Toggle sound">🔊</button></div></div>
 
 <div id="doubleScoreBadge" aria-live="off"></div>
 <div id="onlineCounter" role="status" aria-live="polite"><span class="livePulse"></span><span id="onlineCounterValue">CONNECTING…</span><small>PLAYERS ONLINE NOW</small></div>
@@ -225,7 +229,7 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d',{alpha:false});
 const $=id=>document.getElementById(id),shell=$('shell'),backToModes=$('backToModes'),scoreEl=$('score'),bestEl=$('best'),speedEl=$('speed'),driftEl=$('drift'),bar=$('bar'),barInner=$('barInner'),level=$('level'),overlay=$('overlay'),headline=$('headline'),kicker=$('kicker'),message=$('message'),play=$('play'),soundBtn=$('sound'),coinProgressEl=$('coinProgress'),coinTotalEl=$('coinTotal'),coinTrackFill=$('coinTrackFill'),carNameEl=$('carName'),upgradeToast=$('upgradeToast'),upgradeName=$('upgradeName');
 const PI=Math.PI,TAU=2*PI,DIAG=Math.SQRT1_2;
-const SCORE_MULTIPLIER=3;
+const SCORE_MULTIPLIER=1;
 const HALLOWEEN_START=Date.parse('2026-10-22T00:00:00Z'),HALLOWEEN_END=Date.parse('2026-11-03T00:00:00Z');
 function halloweenActive(){const now=Date.now()+serverClockOffset;return now>=HALLOWEEN_START&&now<HALLOWEEN_END}
 let serverClockOffset=0;
@@ -256,7 +260,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 const scoreBonusBadge=$('doubleScoreBadge');
 function updateScoreBonusBadge(){
  scoreBonusBadge.hidden=false;
- scoreBonusBadge.textContent='⚡ SCORE RATE ×3'+(halloweenActive()?'  ·  🎃 HALLOWEEN 3× GARAGE COINS':'');
+ scoreBonusBadge.textContent='⚡ CLASSIC 1× SCORE'+(halloweenActive()?'  ·  🎃 HALLOWEEN 3× GARAGE COINS':'');
 }
 let W=0,H=0,DPR=1,background=document.createElement('canvas'),bgctx=background.getContext('2d');
 function resize(){W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,innerWidth<700?1.1:1.25);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);background.width=W;background.height=H;let g=bgctx.createLinearGradient(0,0,W,H);const theme=activeTheme();g.addColorStop(0,theme.bg[0]);g.addColorStop(.33,theme.bg[1]);g.addColorStop(.66,theme.bg[2]);g.addColorStop(1,theme.bg[3]);bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);g=bgctx.createRadialGradient(W*.28,H*.18,8,W*.28,H*.18,Math.max(W,H)*.75);g.addColorStop(0,theme.glow[0]+'55');g.addColorStop(1,theme.glow[0]+'00');bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);g=bgctx.createRadialGradient(W*.76,H*.72,6,W*.76,H*.72,Math.max(W,H)*.7);g.addColorStop(0,theme.glow[1]+'44');g.addColorStop(1,theme.glow[1]+'00');bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);let n=Math.floor(W*H/12000);for(let i=0;i<n;i++){let x=((i*73291+13137)%10103)/10103*W,y=((i*29329+893)%10037)/10037*H;let c=i%9===0?'#fff2':i%7===0?'#8ef8ff50':i%5===0?'#ff8cd450':'#d6e6ff24';bgctx.fillStyle=c;let s=i%11===0?2:1;bgctx.fillRect(x,y,s,s)}}
@@ -307,10 +311,16 @@ const ATMOSPHERES=[
 let account={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:false,worldMigrationV3:false,coinAchievementMigrationV2:false};
 try{const a=JSON.parse(localStorage.getItem(DB_SAVE_KEY)||'{}');account={...account,...a};}catch(e){}
 account.wallet=Number.isFinite(+account.wallet)?Math.max(0,Math.floor(+account.wallet)):0;
+if(!account.scoreNormalizedV1){
+ account.verifiedBest=Math.floor((Number(account.verifiedBest)||0)*.4);
+ try{const raw=Number(localStorage.getItem('drift-boss-premium-best'))||0;localStorage.setItem('drift-boss-premium-best',String(Math.floor(raw*.4)))}catch(e){}
+ account.scoreNormalizedV1=true;
+ try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}
+}
 // Old achievement-theme indices 8 and 9 moved after the ten new base atmospheres.
 if(!account.worldMigrationV3){if(account.atmosEquipped===8||account.atmosEquipped===9)account.atmosEquipped+=10;
 if(Array.isArray(account.atmosOwned))account.atmosOwned=account.atmosOwned.map(i=>i===8||i===9?i+10:i);account.worldMigrationV3=true;}
-account.carOwned=Array.isArray(account.carOwned)?account.carOwned:[0];account.carOwned=Array.from(new Set([0,...account.carOwned.filter(i=>Number.isInteger(i)&&i>=0&&i<10)]));
+account.carOwned=Array.isArray(account.carOwned)?account.carOwned:[0];account.carOwned=Array.from(new Set([0,...account.carOwned.filter(i=>Number.isInteger(i)&&i>=0&&i<11)]));
 account.carEquipped=account.carOwned.includes(account.carEquipped)?account.carEquipped:0;
 for(const kind of ['smoke','atmos']){
  const n=kind==='smoke'?SMOKE_OPTIONS.length+19:ATMOSPHERES.length+2;
@@ -713,10 +723,15 @@ async function finishCompetitionRun(finalScore,seconds){
   const result=await onlineApi.finish(session.runId,finalScore,seconds,account.nickname,bonusScoreSeconds,purpleScoreSeconds);
   if(result.top){globalBoard=result.top;if(state==='dead')updateDeathLeaderboard();}heartbeat();
   if(submissionGeneration!==resetGeneration)return;
-  boardStatus='LIVE WORLDWIDE · Latest game result saved';
-  if(result.isPersonalBest&&state==='dead')message.innerHTML+='<p style="color:#9effc5;font-weight:900;font-size:12px">WORLDWIDE PERSONAL BEST · RANK #'+result.rank+'</p>';
+  boardStatus='Verified run recorded — press SUBMIT HIGH SCORE to publish.';
+  if(Number.isInteger(result.verifiedBest)){
+   account.verifiedBest=Math.max(account.verifiedBest||0,result.verifiedBest);best=Math.max(best,result.verifiedBest);
+   bestEl.textContent=String(best).padStart(6,'0');saveAccount();
+  }
+  $('submitHighScoreStatus').textContent='VERIFIED · Ready to publish';
+  if(result.isPersonalBest&&state==='dead')message.innerHTML+='<p style="color:#9effc5;font-weight:900;font-size:12px">NEW VERIFIED BEST · PRESS SUBMIT HIGH SCORE TO PUBLISH</p>';
   if(modalPage==='board'&&modalWrap.classList.contains('open'))loadBoard();
- }catch(e){console.warn('Score submission failed:',e);boardStatus='Online submission failed; your local score is still saved.'}
+ }catch(e){console.warn('Score verification failed:',e);boardStatus='Run could not be verified; your local best remains saved.';$('submitHighScoreStatus').textContent='ONLINE VERIFICATION UNAVAILABLE';}
 }
 
 const modalWrap=$('modalWrap'),modalTitle=$('modalTitle'),modalContent=$('modalContent');
@@ -738,9 +753,8 @@ function applyCloudProfile(data){
   atmosOwned:Array.from(new Set([0,...(p.atmosOwned||[])])),
   carOwned:Array.from(new Set([0,...(p.carOwned||[])]))};
  for(const kind of ['smoke','atmos','car'])if(!account[kind+'Owned'].includes(account[kind+'Equipped']))account[kind+'Equipped']=0;
- account.carSmoke=Array.isArray(p.carSmoke)&&p.carSmoke.length===10
-  ?p.carSmoke.map(v=>Number.isInteger(v)&&v>=0&&v<20?v:0)
-  :Array(10).fill(account.smokeEquipped||0);
+ account.carSmoke=Array.from({length:11},(_,i)=>Number.isInteger(p.carSmoke?.[i])&&p.carSmoke[i]>=0&&p.carSmoke[i]<29&&p.carSmoke[i]!==19?p.carSmoke[i]:0);
+ if(!account.scoreNormalizedV1){account.verifiedBest=Math.floor((Number(account.verifiedBest)||0)*.4);account.scoreNormalizedV1=true;}
  syncCarSmoke();migrateCoinAchievements();if(!account.redPickupRewardV3){account.achievementClaims=account.achievementClaims.filter(i=>i!==15);account.redPickupRewardV3=true;}
  if(data.playerId){competitionId=data.playerId;localStorage.setItem(COMPETITION_ID_KEY,competitionId)}
  try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}
@@ -784,6 +798,7 @@ function restoreGuestProfile(){
  let old=null;try{old=JSON.parse(localStorage.getItem(GUEST_BACKUP_KEY)||'null')}catch(e){}
  if(old?.account&&typeof old.account==='object'){
   account={...account,...old.account,worldMigrationV3:true};
+  if(!account.scoreNormalizedV1){account.verifiedBest=Math.floor((Number(account.verifiedBest)||0)*.4);account.scoreNormalizedV1=true;old.best=Math.floor((Number(old.best)||0)*.4)}
   competitionId=/^[0-9a-f-]{36}$/i.test(old.competitionId)?old.competitionId:createCompetitionId();
   best=Number.isFinite(old.best)?old.best:0;
  }else{
@@ -1140,6 +1155,8 @@ async function initOnlineLeaderboard(){
   start:name=>competitionRequest({action:'start',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName}),
   finish:(runId,score,seconds,name,bonusSeconds,purpleSeconds)=>competitionRequest({action:'finish',playerId:competitionId,runId,score,seconds,bonusSeconds,purpleSeconds,name,fullName:account.fullName,showFullName:account.showFullName}),
   rename:name=>competitionRequest({action:'rename',playerId:competitionId,name,fullName:account.fullName,showFullName:account.showFullName}),
+  myBest:()=>competitionRequest({action:'myBest',playerId:competitionId}),
+  submitBest:()=>competitionRequest({action:'submitBest',playerId:competitionId,name:account.nickname,fullName:account.fullName,showFullName:account.showFullName}),
   deleteAccount:()=>competitionRequest({action:'delete',playerId:competitionId})
  };
  try{const data=await onlineApi.load();recordReleaseEvent(data);globalBoard=data.top||[];boardStatus='LIVE WORLDWIDE · '+(data.players||0)+' RACERS';onlineNoticeEl.textContent='LIVE WORLDWIDE LEADERBOARD';}
@@ -1208,7 +1225,7 @@ async function confirmAccountReset(){
   const result=await onlineApi.deleteAccount();
   if(!result?.deleted)throw Error('Could not remove your leaderboard score.');
   // Preserve all local files until the cloud reset has been acknowledged.
-  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true,coinAchievementMigrationV2:true,motorsportNewsSeen:true,watercraftNewsSeen:true,golfNewsSeen:true,redPickupRewardV3:true,carSmoke:Array(11).fill(0)};
+  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true,coinAchievementMigrationV2:true,motorsportNewsSeen:true,watercraftNewsSeen:true,golfNewsSeen:true,redPickupRewardV3:true,scoreNormalizedV1:true,carSmoke:Array(11).fill(0)};
   if(cloudLoggedIn)await cloudRequest({action:'reset',profile:blankProfile});
   resetGeneration++;
   onlineRunFinished=true;onlineRunPromise=null;
