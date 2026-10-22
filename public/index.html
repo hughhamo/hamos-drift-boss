@@ -292,7 +292,7 @@ if(Array.isArray(account.atmosOwned))account.atmosOwned=account.atmosOwned.map(i
 account.carOwned=Array.isArray(account.carOwned)?account.carOwned:[0];account.carOwned=Array.from(new Set([0,...account.carOwned.filter(i=>Number.isInteger(i)&&i>=0&&i<10)]));
 account.carEquipped=account.carOwned.includes(account.carEquipped)?account.carEquipped:0;
 for(const kind of ['smoke','atmos']){
- const n=kind==='smoke'?SMOKE_OPTIONS.length+10:ATMOSPHERES.length+2;
+ const n=kind==='smoke'?SMOKE_OPTIONS.length+19:ATMOSPHERES.length+2;
  account[kind+'Owned']=Array.from(new Set([0,...(Array.isArray(account[kind+'Owned'])?account[kind+'Owned']:[]).filter(i=>Number.isInteger(i)&&i>=0&&i<n)]));
  if(!account[kind+'Owned'].includes(account[kind+'Equipped']))account[kind+'Equipped']=0;
 }
@@ -304,14 +304,18 @@ function migrateCoinAchievements(){
  account.coinAchievementMigrationV2=true;
 }
 migrateCoinAchievements();
+if(!account.redPickupRewardV3){account.achievementClaims=account.achievementClaims.filter(i=>i!==15);account.redPickupRewardV3=true;}
 account.achievementCounts={loops:0,bananas:0,green:0,red:0,...(account.achievementCounts||{})};
 const cleanName=name=>String(name||'').trim().replace(/[^a-zA-Z0-9 _-]/g,'').replace(/\s{2,}/g,' ').slice(0,18);
 account.nickname=cleanName(account.nickname);
 // Retain legacy garage ownership and translate legacy single drift into a per-car setup.
 account.carSmoke=Array.isArray(account.carSmoke)&&account.carSmoke.length===10
- ?account.carSmoke.map(v=>Number.isInteger(v)&&v>=0&&v<20?v:0)
+ ?account.carSmoke.map(v=>Number.isInteger(v)&&v>=0&&v<29&&v!==19?v:0)
  :Array(10).fill(Number.isInteger(account.smokeEquipped)?account.smokeEquipped:0);
-function syncCarSmoke(){const index=account.carEquipped||0;const trail=account.carSmoke[index]||0;account.smokeEquipped=account.smokeOwned.includes(trail)?trail:0}
+function syncCarSmoke(){const index=account.carEquipped||0;const trail=account.carSmoke[index]||0;account.smokeEquipped=trail!==19&&account.smokeOwned.includes(trail)?trail:0}
+account.smokeOwned=account.smokeOwned.filter(i=>i!==19);
+if(account.smokeEquipped===19)account.smokeEquipped=0;
+syncCarSmoke();
 syncCarSmoke();
 function saveAccount(){try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}scheduleCloudSave();}
 function activeTheme(){const idx=(state==='menu'&&modalWrap?.classList.contains('open')?previewAtmosIndex:null)??account.atmosEquipped;return ALL_THEMES[idx]||ATMOSPHERES[0]}
@@ -718,7 +722,7 @@ function applyCloudProfile(data){
  account.carSmoke=Array.isArray(p.carSmoke)&&p.carSmoke.length===10
   ?p.carSmoke.map(v=>Number.isInteger(v)&&v>=0&&v<20?v:0)
   :Array(10).fill(account.smokeEquipped||0);
- syncCarSmoke();migrateCoinAchievements();
+ syncCarSmoke();migrateCoinAchievements();if(!account.redPickupRewardV3){account.achievementClaims=account.achievementClaims.filter(i=>i!==15);account.redPickupRewardV3=true;}
  if(data.playerId){competitionId=data.playerId;localStorage.setItem(COMPETITION_ID_KEY,competitionId)}
  try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(account))}catch(e){}
  best=account.verifiedBest||0;bestEl.textContent=String(best).padStart(6,'0');try{localStorage.setItem('drift-boss-premium-best',String(best))}catch(e){}
@@ -940,10 +944,26 @@ function renderModal(){
 const ACH=[
 ['First 2K','score',2000,'smoke','Dirt Trail'],['First 5K','score',5000,'smoke','Red Trail'],['First 15K','score',15000,'coins',20000],['First 20K','score',20000,'coins',45000],
 ['First 23K','score',23000,'smoke','Fire Trail'],['First 25K','score',25000,'smoke','Music Trail'],['First 28K','score',28000,'coins',100000],['First 30K','score',30000,'coins',200000],['First 32K','score',32000,'smoke','Fishing Rod & Fish'],['First 35K','score',35000,'coins',300000],['First 38K','score',38000,'smoke','Blackout Void'],['First 40K','score',40000,'coins',500000],
-['25 Loops','loops',25,'smoke','Rollercoaster Tracks'],['300 Bananas','bananas',300,'smoke','Banana Trail'],['150 Green Drifts','green',150,'smoke','Slushie Drift'],['300 Red Pickups','red',300,'smoke','Money Trail']];
-const BONUS_SMOKE=['Dirt Trail','Red Trail','Fire Trail','Music Trail','Fishing Rod & Fish','Blackout Void','Rollercoaster Tracks','Banana Trail','Slushie Drift','Money Trail'];
+['25 Loops','loops',25,'smoke','Rollercoaster Tracks'],['300 Bananas','bananas',300,'smoke','Yellow Slush Trail'],['150 Green Drifts','green',150,'smoke','Mean Green Paint'],['300 Red Pickups','red',300,'coins',40000]];
+const BONUS_SMOKE=['Dirt Trail','Red Trail','Fire Trail','Music Trail','Fishing Rod & Fish','Blackout Void','Rollercoaster Tracks','Yellow Slush Trail','Mean Green Paint','Retired Trail'];
 const BONUS_COLORS=['#a58965','#ff2e51','#ff8522','#935cff','#4fdbff','#05040b','#f8ce63','#ffe25c','#45e8ff','#38f58b'];
-const ALL_SMOKES=[...SMOKE_OPTIONS,...BONUS_SMOKE.map((name,i)=>[name,0,'Achievement-exclusive '+name,'rgba(196,215,244,','rgba(238,242,255,',6,1.1,1,820])];
+const NEW_CAR_DRIFTS=[
+ ['Rally Gravel',3000,'Rally Beast · Dusty amber gravel sparks','#ffba5b'],
+ ['Police Sirens',6000,'Drift Patrol · Alternating electric red and blue streaks','#43a6ff'],
+ ['Monster Mud',12000,'Monster Wheels · Chunky bronze tyre splash','#ba8248'],
+ ['44 Bus Lane',24000,'Dublin Bus 44 · Aqua-and-gold road ribbons','#4bdce7'],
+ ['Phantom Shadow',45000,'Midnight Phantom · Dark violet stealth ribbons','#8764e8'],
+ ['Sakura Storm',90000,'Tokyo Drift · Pink cherry-blossom sparkle','#ff90ca'],
+ ['Formula Slipstream',180000,'F1 · Precision blue ion streak','#43baff'],
+ ['Twin Rival',350000,'Twin Racers · Twin green and blue sparks','#a7ff62'],
+ ['Ocean Wake',640000,'Power Boat · Premium turquoise foam wake','#a9f9ff']
+];
+const CAR_TRAIL_COLORS=NEW_CAR_DRIFTS.map(x=>x[3]);
+const ALL_SMOKES=[
+ ...SMOKE_OPTIONS,
+ ...BONUS_SMOKE.map((name,i)=>[name,0,'Achievement-exclusive '+name,'rgba(196,215,244,','rgba(238,242,255,',6,1.1,1,820]),
+ ...NEW_CAR_DRIFTS.map(v=>[v[0],v[1],v[2],'rgba(196,215,244,','rgba(238,242,255,',4,.65,.75,740])
+];
 const BONUS_THEMES=[]; // The former 15K/30K exclusive worlds have become coin rewards.
 const ALL_THEMES=[...ATMOSPHERES,...BONUS_THEMES];
 function achProgress(a){return a[1]==='score'?Math.max(best,account.verifiedBest):Number(account.achievementCounts[a[1]])||0}
@@ -970,7 +990,7 @@ function checkNewAchievements(){
  }
 }
 function renderAchievements(){
- const icons=['🛞','🏎️','🪙','🪙','🔥','🎵','💰','🪙','🎣','💎','🕳️','👑','🎢','🍌','🥤','💸'];
+ const icons=['🛞','🏎️','🪙','🪙','🔥','🎵','💰','🪙','🎣','💎','🕳️','👑','🎢','🥤','🎨','💰'];
  const colors=['#bd996c','#ff5263','#818aa8','#ffcd58','#ff7a39','#b281ff','#65e8ae','#fc65df','#6fd9ff','#70efbd','#9373cf','#ffd77a','#ffd655','#ffe251','#68e6ff','#4aea86'];
  const unlocked=account.achievementClaims.length;
  modalContent.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:13px"><div><div style="font-weight:950;font-size:20px">THE ACHIEVEMENT VAULT</div><p class="tierSub">Hit milestones. Unlock exclusive trails, atmospheric worlds and coin prizes.</p></div><div class="walletBar">✦ '+unlocked+'/'+ACH.length+' CLAIMED · '+money(account.wallet)+' COINS</div></div>'
@@ -998,12 +1018,12 @@ function renderShop(){
  <div class="modalTabs"><button type="button" data-tab="cars">🏎️ CARS</button><button type="button" data-tab="smoke" class="${isSmoke?'active':''}">💨 DRIFT STYLES</button><button type="button" data-tab="atmos" class="${!isSmoke?'active':''}">🌌 ATMOSPHERES</button></div>
  <p class="modalText">Earn coins by collecting bolts. Each car remembers its own equipped drift. Atmospheric worlds can still be previewed.</p>${previewBox}
  <div class="tierGrid">${list.map((v,i)=>{
- const name=isSmoke?v[0]:v.name,price=isSmoke?smokeSalePrice(i):0,desc=isSmoke?v[2]:v.desc,owns=account[shopTab+'Owned'].includes(i)||garageFree,selected=isSmoke?equippedSmokeForCar()===i:account.atmosEquipped===i;
- const achIndex=isSmoke?i-SMOKE_OPTIONS.length:-1,achSymbols=['🛞','🏎️','🔥','🎵','🎣','🕳️','🎢','🍌','🥤','💸'],swatch=isSmoke&&achIndex>=0
+ if(isSmoke&&i===19)return '';const name=isSmoke?v[0]:v.name,price=isSmoke?smokeSalePrice(i):0,desc=isSmoke?v[2]:v.desc,owns=account[shopTab+'Owned'].includes(i)||garageFree,selected=isSmoke?equippedSmokeForCar()===i:account.atmosEquipped===i;
+ const achIndex=isSmoke?i-SMOKE_OPTIONS.length:-1,achSymbols=['🛞','🏎️','🔥','🎵','🎣','🕳️','🎢','🍌','🥤','💸'],swatch=isSmoke&&achIndex>=0&&achIndex<BONUS_SMOKE.length
  ?'<div class="themePreview achievementSwatch" data-symbol="'+achSymbols[achIndex]+'" style="--swatch1:'+BONUS_COLORS[achIndex]+';--swatch2:'+(achIndex===5?'#9e8ceb':['#e9c79a','#ff8d98','#ffd958','#5ff5fc','#b6fcff','#4b376d','#e7fdff','#fff7ad','#ffacd9','#b9ffcc'][achIndex])+'"></div>'
  :isSmoke?'<div class="themePreview" style="background:linear-gradient(90deg,#263448,'+(['#7f9aad','#e9f3ff','#5aeeff','#cf85ff','#ffae48','#aaff73','#9ceeff','#ff70e1','#fff7ca','#ba88ff'][i]||'#83dffc')+')"></div>'
  :'<div class="themePreview" style="background:linear-gradient(90deg,'+v.bg.join(',')+')"></div>';
- const exclusive=isSmoke?i>=SMOKE_OPTIONS.length:false,afford=garageFree||(!exclusive&&account.wallet>=price);
+ const exclusive=isSmoke?i>=SMOKE_OPTIONS.length&&i<20:false,afford=garageFree||(!exclusive&&account.wallet>=price);
  return `<div class="tierCard ${selected?'equipped':''}"><div class="tierTitle">${i+1}. ${name}</div>${swatch}<div class="tierSub">${desc}</div><div class="price">${isSmoke&&i>=6&&i<SMOKE_OPTIONS.length?'🔥 SALE · ':''}${price===0||garageFree?'FREE':money(price)+' coins'}${isSmoke&&i>=6&&i<SMOKE_OPTIONS.length?' <s style="opacity:.5;font-size:11px">'+money(v[1])+'</s>':''}</div><div class="tierActions">${isSmoke?'':`<button type="button" class="previewMini ${(previewIndex===i)?'active':''}" data-preview="${i}">${previewIndex===i?'PREVIEWING':'PREVIEW'}</button>`}<button type="button" data-buy="${i}" ${selected?'disabled':''} ${(owns||afford)?'':'disabled'}>${selected?'✓ EQUIPPED':owns?'EQUIP':afford?'BUY':exclusive?'ACHIEVEMENT':'NEED '+money(price-account.wallet)}</button></div></div>`;
  }).join('')}</div>`;
  for(const b of modalContent.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>{shopTab=b.dataset.tab;previewSmokeIndex=null;previewAtmosIndex=null;renderShop()});
@@ -1011,7 +1031,7 @@ function renderShop(){
  for(const b of modalContent.querySelectorAll('[data-preview]'))b.addEventListener('click',()=>{if(shopTab==='atmos')previewAtmosIndex=+b.dataset.preview;resize();renderShop()});
 }
 function purchaseItem(i){
- const list=shopTab==='smoke'?ALL_SMOKES:ALL_THEMES,item=list[i];if(!item)return;if(!garageFree&&shopTab==='smoke'&&i>=SMOKE_OPTIONS.length&&!account.smokeOwned.includes(i))return;
+ const list=shopTab==='smoke'?ALL_SMOKES:ALL_THEMES,item=list[i];if(!item)return;if(shopTab==='smoke'&&i===19)return;if(!garageFree&&shopTab==='smoke'&&i>=SMOKE_OPTIONS.length&&i<20&&!account.smokeOwned.includes(i))return;
  const price=shopTab==='smoke'?smokeSalePrice(i):0,owned=account[shopTab+'Owned'];
  if(!owned.includes(i)){
   if(!garageFree&&account.wallet<price)return;
@@ -1970,7 +1990,7 @@ function drawUpgradeCoinBlaster(){
 }
 function updateFxQuality(dt){fxAvg=fxAvg*.94+Math.min(.06,dt)*.06;const desired=fxAvg>.032?.57:fxAvg>.026?.76:1;fxQuality+=(desired-fxQuality)*.06}
 function sampleFxTrail(){
- if(state==='playing'&&!player.airborne&&!player.fallingOff&&driftLeft>.12&&[15,16,17,18,19].includes(account.smokeEquipped)){
+ if(state==='playing'&&!player.airborne&&!player.fallingOff&&driftLeft>.12&&[15,16,17,18].includes(account.smokeEquipped)){
   const prev=fxPath[fxPath.length-1],k=account.smokeEquipped;
   if(!prev||prev.tier!==k||Math.hypot(player.x-prev.x,player.z-prev.z)>(k>=17?3.5:1.5))fxPath.push({x:player.x,z:player.z,heading:player.heading,at:time,tier:k})
  }
@@ -2000,13 +2020,13 @@ const spriteCache={};
 function getBonusSprite(k){
  if(spriteCache[k])return spriteCache[k];
  const img=document.createElement('canvas');img.width=64;img.height=64;const g=img.getContext('2d');
- if(k===17){g.strokeStyle='#ffe555';g.lineWidth=10;g.lineCap='round';g.beginPath();g.moveTo(13,10);g.bezierCurveTo(18,54,45,52,50,14);g.stroke();}
- if(k===18){g.fillStyle='#77f2ff';g.fillRect(16,17,32,35);g.fillStyle='#fda4d9';g.fillRect(18,36,28,14);g.fillStyle='#f2ffff';g.fillRect(14,13,36,6);g.strokeStyle='#ffe4a4';g.beginPath();g.moveTo(37,15);g.lineTo(48,3);g.stroke();}
+ if(k===17){g.fillStyle='#ffe354';g.beginPath();g.moveTo(12,17);g.quadraticCurveTo(37,7,47,19);g.lineTo(42,52);g.quadraticCurveTo(19,47,12,17);g.fill();g.strokeStyle='#ffffbd';g.lineWidth=4;g.stroke();}
+ if(k===18){g.fillStyle='#4cff68';g.beginPath();g.ellipse(31,31,19,14,-.25,0,TAU);g.fill();for(const a of [[10,14,5],[47,19,7],[42,49,5],[20,50,4]]){g.beginPath();g.arc(a[0],a[1],a[2],0,TAU);g.fill();}g.fillStyle='#c0ff80';g.fillRect(19,25,16,6);}
  if(k===19){g.fillStyle='#70ffab';g.fillRect(9,18,46,29);g.strokeStyle='#eeffc8';g.strokeRect(9,18,46,29);g.fillStyle='#126b4a';g.fillRect(19,21,25,24);g.fillStyle='#f3ffba';g.font='bold 24px sans-serif';g.textAlign='center';g.fillText(String.fromCharCode(36),32,42);}
  return spriteCache[k]=img;
 }
 function drawBonusTrail(){
- const k=account.smokeEquipped;if(k<17||k>19||state!=='playing')return;
+ const k=account.smokeEquipped;if(k<17||k>18||state!=='playing')return;
  const img=getBonusSprite(k);ctx.save();let count=0;
  for(let i=fxPath.length-1;i>=0;i-=4){const q=fxPath[i];if(q.tier!==k||time-q.at>1.7)continue;
   const p=project(vec(q.x,.42,q.z));if(!p||p.depth>130||p.x< -25||p.x>W+25)continue;
@@ -2080,6 +2100,7 @@ function drawSkids(){
 
 function drawAchievementSkid(m,tier,fade,i){
  const j=tier-10,A=project(vec(m.x,.13,m.z)),B=project(vec(m.x+m.dx,.13,m.z+m.dz));
+ if(tier>=20){if(!A||!B)return;ctx.save();ctx.strokeStyle=CAR_TRAIL_COLORS[tier-20]||'#a0eaff';ctx.globalAlpha=fade*.9;ctx.lineWidth=tier===23?5.5:3.8;ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=4;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();if(tier===27){ctx.strokeStyle='#2d8ffe';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(A.x+3,A.y+3);ctx.lineTo(B.x+3,B.y+3);ctx.stroke()}ctx.restore();return;}
  if(!A||!B)return;
  ctx.save();ctx.globalAlpha=fade;ctx.lineWidth=j===5?9:j===0?1:3;
  ctx.strokeStyle=BONUS_COLORS[j]||'#fff';ctx.beginPath();ctx.moveTo(A.x,A.y);
@@ -2089,6 +2110,15 @@ function drawAchievementSkid(m,tier,fade,i){
  ctx.restore()
 }
 function drawAchievementSmoke(c,p,r,tier,fade,i){
+ if(tier>=20){
+  const palette=CAR_TRAIL_COLORS[tier-20]||'#bcfaff';
+  c.save();c.globalAlpha=fade*.95;c.fillStyle=palette;c.strokeStyle=palette;
+  if(tier===25){for(let n=0;n<5;n++){const theta=n*TAU/5;c.beginPath();c.ellipse(p.x+Math.cos(theta)*r*.4,p.y+Math.sin(theta)*r*.4,Math.max(2,r*.32),Math.max(2,r*.20),theta,0,TAU);c.fill()}}
+  else if(tier===22||tier===28){c.beginPath();c.ellipse(p.x,p.y,r*1.5,r*.58,time,0,TAU);c.fill();}
+  else{c.beginPath();c.arc(p.x,p.y,Math.max(2,r*.82),0,TAU);c.fill();}
+  if(tier===21||tier===27){c.fillStyle='#1e74f3';c.fillRect(p.x-r*.7,p.y-r*.4,Math.max(2,r*.5),Math.max(2,r*.8))}
+  c.restore();return;
+ }
  const j=tier-10;c.save();c.globalAlpha=fade;c.fillStyle=BONUS_COLORS[j]||'#fff';c.strokeStyle=BONUS_COLORS[j]||'#fff';c.lineWidth=2;
  if(j===0){c.beginPath();c.arc(p.x,p.y,r*.6,0,TAU);c.fill()}
  if(j===1){c.fillRect(p.x-r,p.y-1,r*2,2)}
@@ -2097,9 +2127,9 @@ function drawAchievementSmoke(c,p,r,tier,fade,i){
  if(j===4){c.font='24px sans-serif';c.fillText(['🐟','🐠','🎣'][i%3],p.x,p.y)}
  if(j===5){c.fillStyle='#020207';c.beginPath();c.arc(p.x,p.y,r*3,0,TAU);c.fill();c.stroke()}
  if(j===6){c.beginPath();c.ellipse(p.x,p.y,r*2,r*.8,time+i,0,TAU);c.stroke()}
- if(j===7){c.font='22px sans-serif';c.fillText('🍌',p.x,p.y)}
- if(j===8){c.font='22px sans-serif';c.fillText('🥤',p.x,p.y)}
- if(j===9){c.font='22px sans-serif';c.fillText('💸',p.x,p.y)}
+ if(j===7){c.fillStyle='#ffe45c';c.beginPath();c.arc(p.x,p.y,Math.max(3,r),0,TAU);c.fill()}
+ if(j===8){c.fillStyle='#53ff6a';c.beginPath();c.ellipse(p.x,p.y,r*1.3,r*.8,.3,0,TAU);c.fill()}
+ if(j===9){/* retired */}
  c.restore()
 }
 function drawStar(c,x,y,size,color,opacity){
