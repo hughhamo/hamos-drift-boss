@@ -7,13 +7,25 @@ const isID = v => typeof v==='string' && /^[0-9a-f-]{36}$/i.test(v);
 const json = (data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const bad = (message,status=400)=>json({error:message},status);
 const storeName='drift-boss-global-leaderboard';
-// Release event begins with the first production request after deployment and
-// expires 48 hours later without needing a second deployment. Stored per site.
-const RELEASE_KEY='events/garage-release-20261021';
-async function releaseEvent(store){
- let saved=await store.get(RELEASE_KEY,{type:'json'});
- if(!saved||!Number.isFinite(saved.start)){saved={start:Date.now()};await store.setJSON(RELEASE_KEY,saved);}
- return {start:saved.start,end:saved.start+48*3600*1000};
+// Fixed, published scoring rules and a scheduled Halloween wallet promotion.
+const SCORE_MULTIPLIER=3;
+const HALLOWEEN_START=Date.parse('2026-10-22T00:00:00Z');
+const HALLOWEEN_END=Date.parse('2026-11-03T00:00:00Z');
+const ACTIVE_WINDOW_MS=90000;
+const activityStore=()=>getStore({name:'hamos-drift-boss-player-activity-v1',consistency:'strong'});
+async function activePlayers(activity,now=Date.now()){
+ let cursor,online=0,read=0;
+ do{
+  const page=await activity.list({prefix:'presence/',...(cursor?{cursor}:{})});
+  read+=page.blobs.length;
+  const records=await Promise.all(page.blobs.map(x=>activity.get(x.key,{type:'json'}).catch(()=>null)));
+  online+=records.filter(v=>v&&Number(v.lastSeen)>now-ACTIVE_WINDOW_MS&&Number(v.lastSeen)<=now+5000).length;
+  cursor=page.cursor;
+ }while(cursor&&read<3500);
+ return online;
+}
+function eventSettings(now=Date.now()){
+ return {scoreMultiplier:SCORE_MULTIPLIER,halloweenCoins:now>=HALLOWEEN_START&&now<HALLOWEEN_END,halloweenEnds:HALLOWEEN_END};
 }
 function validAdminKey(value){
  const secret=process.env.HAMOS_MODERATOR_KEY||'';
@@ -60,10 +72,10 @@ async function scores(store,includeBanned=false){
 export default async function leaderboard(req){
   try{
     const store=getStore({name:storeName,consistency:'strong'});
-    const event=await releaseEvent(store);
+    const event=eventSettings();
     if(req.method==='GET'){
       const all=await scores(store);
-      return json({online:true,top:all.slice(0,50).map(({name,fullName,score,updatedAt})=>({name,fullName,score,updatedAt})),players:all.length,event,serverNow:Date.now()});
+      return json({online:true,top:all.slice(0,50).map(({name,fullName,score,updatedAt})=>({name,fullName,score,updatedAt})),players:all.length,onlineNow:await activePlayers(activityStore()),event,serverNow:Date.now()});
     }
     if(req.method!=='POST')return bad('Method not allowed',405);
     if(Number(req.headers.get('content-length')||0)>2048)return bad('Too large',413);
@@ -71,6 +83,17 @@ export default async function leaderboard(req){
     if(raw.length>2048)return bad('Too large',413);
     let data;try{data=JSON.parse(raw)}catch{return bad('Invalid JSON')}
     if(!data||typeof data!=='object')return bad('Invalid data');
+    if(data.action==='presence'){
+      const id=data.playerId;
+      if(!isID(id)||!(await canEditLinkedPlayer(req,id)))return bad('Invalid player session',403);
+      const activity=activityStore(),key='presence/'+id,now=Date.now();
+      const last=await activity.get(key,{type:'json'});
+      const previous=Number(last?.lastSeen)||0;
+      const activeSeconds=previous&&now-previous>0&&now-previous<=45000?(now-previous)/1000:0;
+      const playtimeSeconds=Math.min(100000000,Math.max(0,Number(last?.playtimeSeconds)||0)+activeSeconds);
+      await activity.setJSON(key,{lastSeen:now,playtimeSeconds});
+      return json({onlineNow:await activePlayers(activity,now),playtimeSeconds,serverNow:now});
+    }
     // Global gamechat: public to read, verified-score gated to post.
     // Server-side daily slots enforce a maximum of two messages per player per UTC day.
     if(data.action==='chatList'||data.action==='chatPost'||data.action==='chatReport'){
@@ -148,7 +171,12 @@ export default async function leaderboard(req){
       if(!validAdminKey(data.adminKey))return bad('The entered password does not match the Netlify Production password. Check for extra spaces or replace and redeploy.',403);
       if(data.action==='adminList'){
         const rows=(await scores(store,true)).slice(0,250);
-        return json({players:rows.length,rows});
+        const activity=activityStore();
+        const detailed=await Promise.all(rows.map(async p=>{
+         const a=await activity.get('presence/'+p.id,{type:'json'}).catch(()=>null);
+         return {...p,playtimeSeconds:Math.floor(Number(a?.playtimeSeconds)||0)};
+        }));
+        return json({players:rows.length,rows:detailed});
       }
       const targetId=data.targetId;
       if(!isID(targetId))return bad('Invalid target');
@@ -228,10 +256,9 @@ export default async function leaderboard(req){
       const now=Date.now(),elapsed=(now-run.startedAt)/1000;
       // The server independently checks whether the run overlapped the limited-time
       // event. Paused runs may earn less bonus time than the actual clock overlap.
-      const eventOverlap=Math.max(0,(Math.min(now,event.end)-Math.max(run.startedAt,event.start))/1000);
-      const permittedBonus=eventOverlap>0?Math.min(seconds,eventOverlap+7):0;
-      const expectedScore=Math.floor((seconds+bonusSeconds+purpleSeconds)*145);
-      if(elapsed<0||elapsed>86400||seconds>elapsed+7||bonusSeconds>permittedBonus+.1||score>(elapsed+8+eventOverlap+7+(elapsed+8)*.3)*145||Math.abs(score-expectedScore)>3)return bad('Score verification failed',422);
+      const permittedBonus=0; // Previous limited 2× bonus has been retired.
+      const expectedScore=Math.floor((seconds+purpleSeconds)*145*SCORE_MULTIPLIER);
+      if(elapsed<0||elapsed>86400||seconds>elapsed+7||bonusSeconds>permittedBonus+.1||score>(elapsed+8+(elapsed+8)*.3)*145*SCORE_MULTIPLIER||Math.abs(score-expectedScore)>3)return bad('Score verification failed',422);
       await store.setJSON(runKey,{...run,used:true});
       // Recheck right before writing, in case the player reset while a score was being verified.
       const latestReset=await store.get('resets/'+id,{type:'json'});
