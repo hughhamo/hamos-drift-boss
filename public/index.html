@@ -728,7 +728,7 @@ async function finishCompetitionRun(finalScore,seconds){
    account.verifiedBest=Math.max(account.verifiedBest||0,result.verifiedBest);best=Math.max(best,result.verifiedBest);
    bestEl.textContent=String(best).padStart(6,'0');saveAccount();
   }
-  $('submitHighScoreStatus').textContent='VERIFIED · Ready to publish';
+  $('submitHighScoreStatus').textContent=result.pendingPublication?'VERIFIED · Ready to publish':'VERIFIED · Existing leaderboard score still stands';
   if(result.isPersonalBest&&state==='dead')message.innerHTML+='<p style="color:#9effc5;font-weight:900;font-size:12px">NEW VERIFIED BEST · PRESS SUBMIT HIGH SCORE TO PUBLISH</p>';
   if(modalPage==='board'&&modalWrap.classList.contains('open'))loadBoard();
  }catch(e){console.warn('Score verification failed:',e);boardStatus='Run could not be verified; your local best remains saved.';$('submitHighScoreStatus').textContent='ONLINE VERIFICATION UNAVAILABLE';}
@@ -1088,7 +1088,7 @@ function renderProfile(){
  <form id="playerForm"><input id="nameInput" maxlength="18" autocomplete="nickname" spellcheck="false" placeholder="Your racing nickname" value="${account.nickname.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" /><button type="submit" class="primaryMini">SAVE NAME</button></form>
  <p class="modalText">Optional full name (public; shown subtly beside your nickname). You can leave this blank.</p><input id="fullNameInput" maxlength="48" placeholder="Optional full name" value="${String(account.fullName||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\"/g,'&quot;')}" /><label class="modalText" style="display:block;margin:10px 0"><input type="checkbox" id="showFullName" ${account.showFullName?'checked':''} /> Display my full name publicly</label><div id="profileNote">${account.nickname?'Playing as '+account.nickname:'Choose a name to appear on the online leaderboard.'}</div>
  <div class="walletBar" style="margin-top:18px">BEST CLASSIC: ${money(best)} · Verified without cheat keys: ${money(account.verifiedBest)} · Wallet: ${money(account.wallet)}</div>
- <p class="modalText">Only runs played after this online version is published count toward the worldwide rankings. The server checks game time and rejects impossible instant scores, but no browser game can be completely cheat-proof. Your garage and wallet are stored locally, with optional cloud backup when signed in.</p>`;
+ <p class="modalText">The BEST counter includes local runs. To submit a score, complete a connected run so the server can verify it, then press SUBMIT HIGH SCORE underneath BEST at any time. Re-submitting replaces your previous entry; no duplicate entries are created. Historical published scores were reduced by 60% once for the return to classic 1× scoring.</p>`;
  const cloudBox=document.createElement('section');cloudBox.style.marginTop='20px';
  cloudBox.style.padding='16px';cloudBox.style.border='1px solid #8defff55';cloudBox.style.borderRadius='14px';cloudBox.style.background='#091e32';
  cloudBox.innerHTML='<h3 style="margin:0 0 7px">🔐 OPTIONAL CLOUD SAVE</h3><p class="modalText">Keep playing as a guest, or save your wallet, garage, achievements and nickname under a username and password so you can recover them on another device. Once signed in, this browser remembers your session for up to 60 days. Never reuse a password from another website. There is no email password reset yet, so keep your login somewhere safe.</p>'+
@@ -1216,7 +1216,7 @@ function endGame(){
 }
 function updateBest(save=false){checkNewAchievements();
  if(score>best){best=score;bestEl.textContent=String(best).padStart(6,'0')}
- if(save&&!usedAssistThisRun&&score>account.verifiedBest){account.verifiedBest=score;saveAccount()}
+ // A local result is not a verified leaderboard best until finishCompetitionRun succeeds.
  if(save||time-scoreSavedAt>3){scoreSavedAt=time;try{localStorage.setItem('drift-boss-premium-best',String(best))}catch(e){};/* worldwide rankings submit only when a run actually finishes */}
 }
 function updateDeathLeaderboard(){
