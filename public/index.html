@@ -175,10 +175,15 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 .cloudForm button{grid-column:1/-1;background:#8effd7;color:#061725;border:0;border-radius:9px;padding:12px;font-weight:950;cursor:pointer}
 @media(max-width:500px){.cloudForm{grid-template-columns:1fr}}
 #onlineCounter{position:fixed;z-index:24;top:100px;right:16px;min-width:168px;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:11px 16px;border-radius:13px;border:2px solid #58ffd6a8;background:linear-gradient(120deg,#063e46f5,#0b192bf2);box-shadow:0 0 24px #39f9ba4f,0 12px 32px #0008;color:#fff;text-shadow:0 1px 4px #051b26;font:950 20px system-ui;letter-spacing:.02em;pointer-events:none}
-#onlineCounter small{flex-basis:100%;text-align:center;color:#9effd9;letter-spacing:.14em;font-size:9px;font-weight:950}
+#onlineCounter small{flex-basis:100%;text-align:center;color:#9effd9;letter-spacing:.10em;font-size:9px;font-weight:950}
+#onlineCounterBreakdown{font-size:9px!important;line-height:1.35;letter-spacing:.005em!important;color:#d6fdf5!important}
+#registeredPlayerCard{display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:14px;border:1px solid #66ebff89;padding:9px 17px;margin:10px auto 12px;max-width:300px;background:linear-gradient(125deg,#112f45dd,#08283dda);box-shadow:inset 0 0 22px #60dfff19,0 5px 22px #07102170}
+#registeredPlayerCard strong{font-size:28px;font-weight:1000;line-height:1.1;color:#d5ffef;text-shadow:0 0 15px #5deeb766}
+#registeredPlayerCard span{font-weight:900;font-size:11px;letter-spacing:.09em;color:#a0f6f0}
+#registeredPlayerCard small{font-size:10px;color:#a9c7da;text-align:center}
 #onlineCounter .livePulse{width:10px;height:10px;background:#5dffb3;border-radius:50%;box-shadow:0 0 12px #38ffd2;animation:livePulse 1.7s ease-in-out infinite}
 @keyframes livePulse{50%{opacity:.4;transform:scale(.80)}}
-@media(max-width:620px){#onlineCounter{right:9px;top:87px;min-width:100px;padding:6px 9px;font-size:15px;gap:4px}#onlineCounter small{font-size:7px;letter-spacing:.05em}}
+@media(max-width:620px){#onlineCounter{right:9px;top:87px;min-width:100px;padding:6px 9px;font-size:15px;gap:4px}#onlineCounter small{font-size:7px;letter-spacing:.05em}#onlineCounterBreakdown{font-size:7px!important}#registeredPlayerCard{padding:7px 12px;margin:8px auto}#registeredPlayerCard strong{font-size:23px}}
 </style>
 </head>
 <body>
@@ -187,12 +192,13 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 <div class="hud"><div class="logo">HAMOS <b>DRIFT BOSS</b><small>ONLINE COMPETITION</small></div><div class="right"><div class="metric"><small>SCORE</small><strong id="score">000000</strong></div><div class="metric"><small>BEST</small><strong id="best">000000</strong></div><button id="sound" class="sound" title="Toggle sound" aria-label="Toggle sound">🔊</button></div></div>
 
 <div id="doubleScoreBadge" aria-live="off"></div>
-<div id="onlineCounter" role="status" aria-live="polite"><span class="livePulse"></span><span id="onlineCounterValue">CONNECTING…</span><small>PLAYERS ONLINE NOW</small></div>
+<div id="onlineCounter" role="status" aria-live="polite"><span class="livePulse"></span><span id="onlineCounterValue">CONNECTING…</span><small>RACERS ON GRID</small><small id="onlineCounterBreakdown">Real players and NPC racers shown separately</small></div>
 <div id="centerInfo"><span id="level"></span><div id="drift">DRIFT!</div><div id="bar"><div id="barInner"></div></div></div>
 <div id="speedCorner"><small>SPEED</small><strong id="speed">140</strong></div>
 <div id="coinPanel"><div class="topline"><span class="coin-icon">★</span><span id="coinProgress">0 / 30</span><span id="coinTotal">0 TOTAL</span></div><div class="coin-track"><span id="coinTrackFill"></span></div><div class="coin-car">CURRENT CAR <strong id="carName">STREET HATCH</strong></div></div>
 <div id="upgradeToast"><span>ENGINE UPGRADE · SPEED & GRIP</span><b id="upgradeName">SPORT COUPE</b><small>MORE GRIP · FASTER TOP SPEED</small></div>
-<div id="overlay" class="intro"><div class="panel"><div id="kicker" class="kicker">STARTING CAR · STREET HATCH</div><h1 id="headline"><span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em></h1><div id="message">PRESS SPACE TO PLAY</div><div id="deathTopTen"></div><div id="onlineIntro">◈ <span id="onlineLinkStatus">CONNECTING LEADERBOARD…</span><small>CLICK THE CAR TO CHOOSE A NICKNAME &amp; COMPETE</small></div><div class="instruction"><span class="key">SPACE</span><span><b>HOLD</b> → drive diagonally right<br><b>RELEASE</b> → drive diagonally left</span></div><button class="cta" id="play">START DRIVING →</button><button id="backToModes" type="button">HOME</button><div class="hint">Tap or click to play on mobile</div></div></div>
+<div id="overlay" class="intro"><div class="panel"><div id="kicker" class="kicker">STARTING CAR · STREET HATCH</div><h1 id="headline"><span class="hamos-top">HAMOS</span>DRIFT <em>BOSS</em></h1><div id="message">PRESS SPACE TO PLAY</div><div id="deathTopTen"></div><div id="registeredPlayerCard"><strong id="registeredAccountTotal">—</strong><span>REGISTERED ACCOUNTS</span><small id="leaderboardRacerTotal">Connecting to the worldwide leaderboard…</small></div>
+<div id="onlineIntro">◈ <span id="onlineLinkStatus">CONNECTING LEADERBOARD…</span><small>CLICK THE CAR TO CHOOSE A NICKNAME &amp; COMPETE</small></div><div class="instruction"><span class="key">SPACE</span><span><b>HOLD</b> → drive diagonally right<br><b>RELEASE</b> → drive diagonally left</span></div><button class="cta" id="play">START DRIVING →</button><button id="backToModes" type="button">HOME</button><div class="hint">Tap or click to play on mobile</div></div></div>
 
 <div id="garageLaunch"></div>
 <div class="menuTools"><button id="openShopMenu" type="button">🛠<span>GARAGE</span></button><button id="openAchievementsMenu" type="button">✦<span>ACHIEVEMENTS</span></button><button id="openChatMenu" type="button">💬<span>GAMECHAT</span></button><button id="openBoardMenu" type="button">🏆<span>LEADERBOARD</span></button><button id="openProfileMenu" type="button">☁ SAVE / LOGIN</button></div><div id="menuCarHint">CLICK THE CAR TO SAVE YOUR PROGRESS OR CHOOSE A NAME</div>
@@ -233,21 +239,36 @@ function recordReleaseEvent(data){
  if(!data)return;
  if(Number.isFinite(data.serverNow))serverClockOffset=Number(data.serverNow)-Date.now();
  if(Number.isInteger(data.onlineNow))updateOnlineCount(data.onlineNow);
+ if(Number.isInteger(data.virtualRacers))updateVirtualRacers(data.virtualRacers);
+ updateCommunityStats(data);
  updateScoreBonusBadge();
 }
 let bonusScoreSeconds=0,purpleScoreSeconds=0;
-let onlinePlayers=null;
-function updateOnlineCount(n){
- onlinePlayers=Math.max(0,Math.floor(n));
- const label=$('onlineCounterValue');
- if(label)label.textContent=onlinePlayers.toLocaleString()+' LIVE';
+let onlinePlayers=null,virtualRacers=null;
+function renderRaceGrid(){
+ const label=$('onlineCounterValue'),detail=$('onlineCounterBreakdown');
+ if(onlinePlayers===null||virtualRacers===null){if(label)label.textContent='CONNECTING…';if(detail)detail.textContent='Fetching live sessions';return;}
+ const total=onlinePlayers+virtualRacers;
+ if(label)label.textContent=total.toLocaleString()+' ON GRID';
+ if(detail)detail.textContent=onlinePlayers+' REAL ONLINE · '+virtualRacers+' VIRTUAL RACERS';
  if(state==='dead')updateDeathLeaderboard();
+}
+function updateOnlineCount(n){
+ onlinePlayers=Math.max(0,Math.floor(n));renderRaceGrid();
+}
+function updateVirtualRacers(n){
+ virtualRacers=Math.max(0,Math.floor(n));renderRaceGrid();
+}
+function updateCommunityStats(data){
+ if(Number.isInteger(data.registeredAccounts))$('registeredAccountTotal').textContent=data.registeredAccounts.toLocaleString();
+ if(Number.isInteger(data.players))$('leaderboardRacerTotal').textContent=data.players.toLocaleString()+' racers with recorded scores';
 }
 async function heartbeat(){
  if(document.visibilityState==='hidden')return;
  try{
   const data=await competitionRequest({action:'presence',playerId:competitionId});
   if(Number.isInteger(data.onlineNow))updateOnlineCount(data.onlineNow);
+  if(Number.isInteger(data.virtualRacers))updateVirtualRacers(data.virtualRacers);
   if(Number.isFinite(data.serverNow))serverClockOffset=data.serverNow-Date.now();
  }catch(e){/* display last observed count instead of making up a number */}
 }
@@ -1176,7 +1197,7 @@ function updateDeathLeaderboard(){
  const esc=t=>String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const top=globalBoard.slice(0,10);
  box.innerHTML=top.length?'<h3>🏆 WORLD TOP TEN · CAN YOU BE #1?</h3>'+top.map((p,i)=>'<div class="deathRank"><b>'+(i<3?['🥇','🥈','🥉'][i]:'#'+(i+1))+'</b><b>'+esc(p.name)+'</b><span>'+money(p.score)+'</span></div>').join('')+'<p style="text-align:center;color:#f0c96b;font-size:11px;margin:9px 0 0">YOUR SCORE · '+money(score)+' · CHASE THE PODIUM!</p>':'<p style="font-size:12px;text-align:center">🏆 WORLD TOP TEN · Online scores loading</p>';
- box.insertAdjacentHTML('afterbegin','<p style="font-size:13px;color:#aaffd9;margin:4px 0 10px;text-align:center">🟢 '+(onlinePlayers===null?'CONNECTING…':onlinePlayers+' REAL PLAYERS ONLINE')+'</p>');
+ box.insertAdjacentHTML('afterbegin','<p style="font-size:13px;color:#aaffd9;margin:4px 0 10px;text-align:center">🟢 '+(onlinePlayers===null||virtualRacers===null?'CONNECTING…':(onlinePlayers+virtualRacers)+' ON GRID · '+onlinePlayers+' REAL ONLINE + '+virtualRacers+' VIRTUAL RACERS')+'</p>');
 }
 function displayOverlay(kind){
  state=kind;overlay.classList.remove('hidden');overlay.classList.remove('intro');shell.classList.remove('menu');driftEl.style.opacity=0;bar.style.opacity=0;
