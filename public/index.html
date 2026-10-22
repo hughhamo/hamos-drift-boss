@@ -2219,8 +2219,8 @@ function drawAttachedFX(){
  ctx.restore();
 }
 function drawSkids(){
- if(selectedCar().type==='boat')return; // No road tyre/skid lines trailing the power boat.
- for(let i=0;i<tracks.length;i++){
+ // Boats never leave straight tyre/skid marks, but premium foam/sparkle drifts remain visible.
+ if(selectedCar().type!=='boat')for(let i=0;i<tracks.length;i++){
   const m=tracks[i],tier=m.tier??0,fade=clamp(m.life/1.25,0,1)*m.alpha;
   const A=vec(m.x,.13,m.z),B=vec(m.x+m.dx,.13,m.z+m.dz);
   if([14,16].includes(tier))continue;if(tier>=10){drawAchievementSkid(m,tier,fade,i);continue;}if(tier===0){segment(A,B,'#91a0b2'+Math.round(90*fade).toString(16).padStart(2,'0'),1.7);continue;}
