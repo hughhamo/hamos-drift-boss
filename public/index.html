@@ -1823,7 +1823,98 @@ function drawPowerBoat(){
   for(const side of [-1,1]){const behind=pt(side*1.24,.05,-3.42);const wave=pt(side*(1.8+Math.sin(time*9)*.13),.04,-6.6);segment(behind,wave,'#d8ffffa0',2.5);}
  }
 }
-function drawCar(){if(selectedCar().type==='boat'){drawPowerBoat();return;}let faces=[];const cs=currentStyle(),vehicle=selectedCar(),kind=vehicle.type;const bodyW=1,bodyL=1,bodyH=1;
+
+function drawSolidShowcaseVehicle(kind){
+ // Purpose-built, fully opaque meshes. No generic sedan glass shows through
+ // the long bus, and no interior faces can poke through Phantom windows.
+ const faces=[];
+ function face(coords,color){
+  const pts=coords.map(v=>local(v[0],v[1],v[2]));
+  const center=pts.reduce((sum,p)=>sum+(p.x-camera.eye.x)*camera.forward.x+(p.y-camera.eye.y)*camera.forward.y+(p.z-camera.eye.z)*camera.forward.z,0)/pts.length;
+  faces.push({pts,color,depth:center});
+ }
+ function box(x0,x1,y0,y1,z0,z1,colors){
+  const [top,left,right,front,back]=Array.isArray(colors)?colors:Array(5).fill(colors);
+  face([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]],top);
+  face([[x0,y0,z0],[x0,y1,z0],[x0,y1,z1],[x0,y0,z1]],left);
+  face([[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],[x1,y0,z0]],right);
+  face([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],front);
+  face([[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0]],back);
+ }
+ if(kind==='bus'){
+  // True single-piece body: route 44, six passenger bays, three door panels,
+  // two axles, opaque cockpit, curved-looking roof strips and rear details.
+  box(-1.32,1.32,.43,2.63,-4.82,4.74,['#ffd85a','#eeb72b','#ffd345','#f5c63a','#bd8a22']);
+  box(-1.34,1.34,.44,.99,-4.82,4.75,['#00a9b5','#067788','#17bcca','#1298a8','#08617a']);
+  box(-1.25,1.25,2.64,2.78,-4.73,4.66,['#eee9dc','#b6b9af','#f5f3e4','#d5d8ce','#b2bdbb']);
+  // Dark full-height cockpit underneath the front windscreen.
+  box(-1.20,1.20,1.29,2.42,4.42,4.71,'#112d43');
+  const windowZ=[-4.24,-2.90,-1.56,-.22,1.12,2.46];
+  for(const side of [-1,1]){
+   for(const z of windowZ){
+    const x0=side<0?-1.366:1.327,x1=side<0?-1.327:1.366;
+    box(x0,x1,1.43,2.38,z,z+.92,
+      ['#9ee9f5','#183e54','#174a62','#2c7692','#14344d']);
+    const edge=side*1.375;
+    face([[edge,2.36,z],[edge,2.36,z+.92],[edge,2.19,z+.80],[edge,2.19,z+.08]],'#7bccdf');
+   }
+   // Three-piece folding entrance doors on the right-hand side.
+   if(side>0){
+    for(const z of [2.78,3.45])box(1.328,1.380,.68,2.30,z,z+.58,['#31576e','#124a63','#1c6482','#40647d','#17435d']);
+    box(1.385,1.42,.64,2.37,3.41,3.47,'#d3d8c9');
+    for(const z of [3.02,3.74])box(1.382,1.42,1.11,1.19,z,z+.21,'#fff7a4');
+   }
+   // Continuous window sill, route accent and painted lower coachwork.
+   box(side*1.345-.035,side*1.345+.035,1.30,1.41,-4.68,4.61,'#e5f0ed');
+   for(const axle of [-3.30,3.10]){
+    box(side*1.60-.29,side*1.60+.29,.13,1.08,axle-.70,axle+.70,['#323e52','#08121f','#141d2c','#1b2534','#0c1726']);
+    box(side*1.83-.06,side*1.83+.06,.36,.84,axle-.43,axle+.43,'#839aa9');
+    box(side*1.92-.02,side*1.92+.02,.48,.75,axle-.23,axle+.23,'#dae5e5');
+   }
+   box(side*1.34-.036,side*1.34+.036,1.01,1.11,-4.71,4.58,'#fff2bd');
+  }
+  // Windshield is a painted opaque surface (not transparent).
+  box(-1.19,1.19,1.45,2.32,4.75,4.80,['#84d5ef','#143a50','#1a607b','#256f8b','#10283d']);
+  box(-1.24,1.24,2.30,2.54,4.79,4.86,['#ffe77c','#112c3e','#e4cb55','#101c2e','#163148']);
+  box(-1.20,1.20,.90,1.03,4.81,4.90,'#f0ede1');
+  box(-1.23,1.23,1.45,2.39,-4.91,-4.83,['#7fcedf','#12364a','#21677c','#123a54','#1b566e']);
+  for(const side of [-1,1]){
+   box(side*.81-.19,side*.81+.19,.83,1.05,4.88,4.95,'#fef5dc');
+   box(side*.80-.16,side*.80+.16,.82,1.06,-4.99,-4.93,'#f44d64');
+  }
+  // Roof air conditioning boxes, luggage hatch and rails.
+  for(const z of [-3.1,.1,2.1])box(-.63,.63,2.79,2.91,z,z+.89,['#dce9e4','#98b6c0','#f5fffc','#c6d1d4','#879ba2']);
+  for(const x of [-1.10,1.10])box(x-.035,x+.035,2.78,2.85,-4.47,4.52,'#b2d5e1');
+ }else{
+  // Midnight Phantom: fixed opaque cockpit and strong carbon-bodied silhouette.
+  box(-1.35,1.35,.36,1.24,-2.61,2.67,['#23283a','#101624','#313b52','#232d44','#0c1524']);
+  box(-1.22,1.22,1.17,1.40,-1.45,1.61,['#34374f','#171d33','#262e44','#303b54','#141b2d']);
+  box(-.99,.99,1.40,1.97,-.91,.87,['#1b233b','#111a2d','#202d45','#17233b','#10192e']);
+  box(-.89,.89,1.98,2.02,-.82,.82,'#44455b');
+  // Glass is dark, opaque blue; all faces have complete solid fill.
+  box(-.93,.93,1.50,1.94,.91,1.01,['#193c56','#0c1d35','#31627d','#20465b','#0e2840']);
+  box(-.92,.92,1.48,1.91,-1.04,-.93,['#172f4b','#122039','#28465e','#204b65','#122539']);
+  for(const side of [-1,1]){
+   box(side*1.00-.04,side*1.00+.04,1.42,1.91,-.68,.80,['#1b324c','#0d1930','#1a3956','#274a64','#102039']);
+   box(side*1.35-.12,side*1.35+.12,.62,1.10,-2.27,-1.0,'#192233');
+   box(side*1.35-.12,side*1.35+.12,.60,1.05,1.0,2.22,'#192233');
+   for(const axle of [-1.78,1.83])box(side*1.51-.28,side*1.51+.28,.10,.80,axle-.53,axle+.53,['#111b2a','#060a15','#263449','#111625','#050911']);
+   box(side*.91-.24,side*.91+.24,.72,.87,2.68,2.77,'#baccff');
+   box(side*.89-.22,side*.89+.22,.78,1.04,-2.76,-2.66,'#c65fff');
+  }
+  box(-1.55,1.55,1.47,1.64,-2.99,-2.63,['#bfaeff','#151329','#917fea','#c4a7ff','#2a2056']);
+  box(-1.36,1.36,.37,.58,2.55,2.92,['#50617b','#141b2b','#4d536a','#60758a','#171a2d']);
+  box(-1.36,1.36,.35,.59,-2.94,-2.57,['#4b416f','#100f21','#61518d','#71529b','#161025']);
+ }
+ faces.sort((a,b)=>b.depth-a.depth);
+ for(const f of faces)poly(f.pts,f.color);
+ if(kind==='bus'){
+  const route=project(local(0,2.41,4.98));
+  if(route&&route.depth>1.6){ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff2a1';ctx.font='950 '+Math.max(9,Math.min(30,camera.zoom/route.depth*.44))+'px system-ui';ctx.fillText('44',route.x,route.y);ctx.restore();}
+ }
+}
+
+function drawCar(){if(selectedCar().type==='bus'||selectedCar().type==='phantom'){drawSolidShowcaseVehicle(selectedCar().type);return;}if(selectedCar().type==='boat'){drawPowerBoat();return;}let faces=[];const cs=currentStyle(),vehicle=selectedCar(),kind=vehicle.type;const bodyW=1,bodyL=1,bodyH=1;
 function face(points,color){let pts=points.map(v=>local(v[0]*bodyW,v[1]*bodyH,v[2]*bodyL));let depth=0;for(let p of pts)depth+=(p.x-camera.eye.x)*camera.forward.x+(p.y-camera.eye.y)*camera.forward.y+(p.z-camera.eye.z)*camera.forward.z;faces.push({pts,color,depth:depth/pts.length})}
 function box(x0,x1,y0,y1,z0,z1,colors){let [top,left,right,front,back]=colors;
 face([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]],top);
