@@ -219,23 +219,21 @@ h1 .hamos-top{display:block;font-size:clamp(19px,2.9vw,27px);line-height:1.38;pa
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d',{alpha:false});
 const $=id=>document.getElementById(id),shell=$('shell'),backToModes=$('backToModes'),scoreEl=$('score'),bestEl=$('best'),speedEl=$('speed'),driftEl=$('drift'),bar=$('bar'),barInner=$('barInner'),level=$('level'),overlay=$('overlay'),headline=$('headline'),kicker=$('kicker'),message=$('message'),play=$('play'),soundBtn=$('sound'),coinProgressEl=$('coinProgress'),coinTotalEl=$('coinTotal'),coinTrackFill=$('coinTrackFill'),carNameEl=$('carName'),upgradeToast=$('upgradeToast'),upgradeName=$('upgradeName');
 const PI=Math.PI,TAU=2*PI,DIAG=Math.SQRT1_2;
-// Server-timed 48h launch event begins on first production request.
-let SCORE_BONUS_START=0,SCORE_BONUS_END=0,serverClockOffset=0;
-function recordReleaseEvent(data){if(!data?.event)return;
- SCORE_BONUS_START=Number(data.event.start)||0;SCORE_BONUS_END=Number(data.event.end)||0;
+const SCORE_MULTIPLIER=3;
+const HALLOWEEN_START=Date.parse('2026-10-22T00:00:00Z'),HALLOWEEN_END=Date.parse('2026-11-03T00:00:00Z');
+function halloweenActive(){const now=Date.now()+serverClockOffset;return now>=HALLOWEEN_START&&now<HALLOWEEN_END}
+let serverClockOffset=0;
+function recordReleaseEvent(data){
+ if(!data)return;
  if(Number.isFinite(data.serverNow))serverClockOffset=Number(data.serverNow)-Date.now();
- lastScoreBadgeSeconds=null;
+ if(Number.isInteger(data.onlineNow))updateOnlineCount(data.onlineNow);
+ updateScoreBonusBadge();
 }
-let bonusScoreSeconds=0,purpleScoreSeconds=0,lastScoreBadgeSeconds=null;
+let bonusScoreSeconds=0,purpleScoreSeconds=0;
 const scoreBonusBadge=$('doubleScoreBadge');
 function updateScoreBonusBadge(){
- const now=Date.now()+serverClockOffset,isActive=SCORE_BONUS_START>0&&now>=SCORE_BONUS_START&&now<SCORE_BONUS_END;
- const secondsLeft=isActive?Math.ceil((SCORE_BONUS_END-now)/1000):0;
- if(secondsLeft===lastScoreBadgeSeconds)return;
- lastScoreBadgeSeconds=secondsLeft;
- scoreBonusBadge.hidden=!isActive;
- if(isActive){const hh=Math.floor(secondsLeft/3600),mm=Math.floor(secondsLeft%3600/60),ss=secondsLeft%60;
-  scoreBonusBadge.textContent='⚡ 48H LAUNCH 2× SCORE · '+hh+'h '+String(mm).padStart(2,'0')+'m '+String(ss).padStart(2,'0')+'s';}
+ scoreBonusBadge.hidden=false;
+ scoreBonusBadge.textContent='⚡ SCORE RATE ×3'+(halloweenActive()?'  ·  🎃 HALLOWEEN 3× GARAGE COINS':'');
 }
 let W=0,H=0,DPR=1,background=document.createElement('canvas'),bgctx=background.getContext('2d');
 function resize(){W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,innerWidth<700?1.1:1.25);canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);background.width=W;background.height=H;let g=bgctx.createLinearGradient(0,0,W,H);const theme=activeTheme();g.addColorStop(0,theme.bg[0]);g.addColorStop(.33,theme.bg[1]);g.addColorStop(.66,theme.bg[2]);g.addColorStop(1,theme.bg[3]);bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);g=bgctx.createRadialGradient(W*.28,H*.18,8,W*.28,H*.18,Math.max(W,H)*.75);g.addColorStop(0,theme.glow[0]+'55');g.addColorStop(1,theme.glow[0]+'00');bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);g=bgctx.createRadialGradient(W*.76,H*.72,6,W*.76,H*.72,Math.max(W,H)*.7);g.addColorStop(0,theme.glow[1]+'44');g.addColorStop(1,theme.glow[1]+'00');bgctx.fillStyle=g;bgctx.fillRect(0,0,W,H);let n=Math.floor(W*H/12000);for(let i=0;i<n;i++){let x=((i*73291+13137)%10103)/10103*W,y=((i*29329+893)%10037)/10037*H;let c=i%9===0?'#fff2':i%7===0?'#8ef8ff50':i%5===0?'#ff8cd450':'#d6e6ff24';bgctx.fillStyle=c;let s=i%11===0?2:1;bgctx.fillRect(x,y,s,s)}}
@@ -309,9 +307,7 @@ account.achievementCounts={loops:0,bananas:0,green:0,red:0,...(account.achieveme
 const cleanName=name=>String(name||'').trim().replace(/[^a-zA-Z0-9 _-]/g,'').replace(/\s{2,}/g,' ').slice(0,18);
 account.nickname=cleanName(account.nickname);
 // Retain legacy garage ownership and translate legacy single drift into a per-car setup.
-account.carSmoke=Array.isArray(account.carSmoke)&&account.carSmoke.length===10
- ?account.carSmoke.map(v=>Number.isInteger(v)&&v>=0&&v<29&&v!==19?v:0)
- :Array(10).fill(Number.isInteger(account.smokeEquipped)?account.smokeEquipped:0);
+account.carSmoke=Array.from({length:11},(_,i)=>Number.isInteger(account.carSmoke?.[i])&&account.carSmoke[i]>=0&&account.carSmoke[i]<29&&account.carSmoke[i]!==19?account.carSmoke[i]:(i<10?Number.isInteger(account.smokeEquipped)?account.smokeEquipped:0:0));
 function syncCarSmoke(){const index=account.carEquipped||0;const trail=account.carSmoke[index]||0;account.smokeEquipped=trail!==19&&account.smokeOwned.includes(trail)?trail:0}
 account.smokeOwned=account.smokeOwned.filter(i=>i!==19);
 if(account.smokeEquipped===19)account.smokeEquipped=0;
@@ -320,7 +316,7 @@ function saveAccount(){try{localStorage.setItem(DB_SAVE_KEY,JSON.stringify(accou
 function activeTheme(){const idx=(state==='menu'&&modalWrap?.classList.contains('open')?previewAtmosIndex:null)??account.atmosEquipped;return ALL_THEMES[idx]||ATMOSPHERES[0]}
 function activeSmoke(){return ALL_SMOKES[account.smokeEquipped]||SMOKE_OPTIONS[0]}
 function equippedSmokeForCar(){return account.carSmoke[account.carEquipped]||0}
-function shopEarn(amount){account.wallet+=amount;saveAccount();}
+function shopEarn(amount){account.wallet+=amount*(halloweenActive()?3:1);saveAccount();}
 const GARAGE_CARS=[
 {name:'STREET HATCH',price:0,type:'hatch',color:'#ff5cbb',accent:'#fff0ff',desc:'Your original free starter. Classic and clean.'},
 {name:'RALLY BEAST',price:5000,type:'rally',color:'#f64a39',accent:'#ffe49a',desc:'Rugged rally car with spotlights, flares and roof scoop.'},
@@ -331,7 +327,8 @@ const GARAGE_CARS=[
 {name:'TOKYO DRIFT',price:160000,type:'tokyo',color:'#f4e7ff',accent:'#ff51ce',desc:'Japanese drift machine: cherry-pink neon, race stripes and huge wing.'},
 {name:'GRAND PRIX F1',price:320000,type:'formula',color:'#127aff',accent:'#adf6ff',desc:'Formula racer with sleek wings and blue energy orb pickups.'},
 {name:'GOLF CART',price:640000,type:'golf',color:'#f6fcf1',accent:'#8fecb3',desc:'Open-roof country club cart on a freshly mowed golf-course fairway. Collect golf balls.'},
-{name:'POWER BOAT',price:1280000,type:'boat',color:'#1ddaff',accent:'#eaffff',desc:'Premium twin-engine racing speedboat. Turn the entire course into neon ocean water.'}
+{name:'POWER BOAT',price:1280000,type:'boat',color:'#1ddaff',accent:'#eaffff',desc:'Premium twin-engine racing speedboat. Turn the entire course into neon ocean water.'},
+{name:"BEADY'S TRACTOR",price:2560000,type:'tractor',color:'#edbf33',accent:'#ffef95',desc:'Gold-plated farm tractor with giant tyres, golden road and frothy golden mug pickups.'}
 ];
 function selectedCar(){return GARAGE_CARS[account.carEquipped]||GARAGE_CARS[0]}
 let usedAssistThisRun=false,modalWasPlaying=false,modalPage='shop',shopTab='cars',previewSmokeIndex=null,previewAtmosIndex=null,garageFree=false,globalBoard=[],boardStatus='Connecting to worldwide leaderboard…',onlineApi=null,lastOnlineScoreSent=0,onlineBusy=false;
@@ -641,7 +638,7 @@ function rebuildBoundary(){
 // both real distance covered and actual coin earnings. More coins also
 // upgrade your car, letting you cover the remaining route faster.
 function syncScore(dt,fromX,fromZ,pace){
- score=Math.floor((time+bonusScoreSeconds+purpleScoreSeconds)*145);
+ score=Math.floor((time+purpleScoreSeconds)*145*SCORE_MULTIPLIER);
  scoreEl.textContent=String(score).padStart(6,'0');
  speedEl.textContent=String(Math.round(pace*3.8));updateSpeedHud();
 }
@@ -1007,7 +1004,7 @@ function renderAchievements(){
 function smokeSalePrice(i){const original=ALL_SMOKES[i]?.[1]||0;return i>=6&&i<SMOKE_OPTIONS.length?Math.floor(original*.65):i>0&&i<SMOKE_OPTIONS.length?Math.floor(original*.8):original;}
 function renderCarGarage(){
  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\"/g,'&quot;');
- modalContent.innerHTML='<div class="walletBar">🪙 WALLET · '+money(account.wallet)+' COINS</div><div class="modalTabs"><button class="active" data-tab="cars">🏎️ CARS</button><button data-tab="smoke">💨 DRIFT STYLES</button><button data-tab="atmos">🌌 ATMOSPHERES</button></div><p class="modalText">Cars are permanent cosmetic purchases. Nuts & bolts collected on the road upgrade your engine every 30 pickups, not the appearance of your purchased car.</p><div class="tierGrid">'+GARAGE_CARS.map((v,i)=>{const owned=account.carOwned.includes(i),selected=account.carEquipped===i;return '<div class="tierCard '+(selected?'equipped':'')+'"><div class="carArt" style="--carpaint:'+v.color+';--cartrim:'+v.accent+'"><span>'+(['🚗','🏁','🚓','🚙','🚌','🌑','🌸','🏎️','⛳','🚤'][i])+'</span><b>'+esc(v.name)+'</b></div><div class="tierTitle">'+(i+1)+'. '+esc(v.name)+'</div><div class="tierSub">'+esc(v.desc)+'</div><div class="price">'+(v.price?money(v.price)+' COINS':'FREE')+'</div><button data-car="'+i+'" '+(selected||(!owned&&!garageFree&&account.wallet<v.price)?'disabled':'')+'>'+(selected?'✓ DRIVING':owned?'EQUIP':garageFree?'EQUIP':'BUY CAR')+'</button></div>'}).join('')+'</div>';
+ modalContent.innerHTML='<div class="walletBar">🪙 WALLET · '+money(account.wallet)+' COINS</div><div class="modalTabs"><button class="active" data-tab="cars">🏎️ CARS</button><button data-tab="smoke">💨 DRIFT STYLES</button><button data-tab="atmos">🌌 ATMOSPHERES</button></div><p class="modalText">Cars are permanent cosmetic purchases. Nuts & bolts collected on the road upgrade your engine every 30 pickups, not the appearance of your purchased car.</p><div class="tierGrid">'+GARAGE_CARS.map((v,i)=>{const owned=account.carOwned.includes(i),selected=account.carEquipped===i;return '<div class="tierCard '+(selected?'equipped':'')+'"><div class="carArt" style="--carpaint:'+v.color+';--cartrim:'+v.accent+'"><span>'+(['🚗','🏁','🚓','🚙','🚌','🌑','🌸','🏎️','⛳','🚤','🚜'][i])+'</span><b>'+esc(v.name)+'</b></div><div class="tierTitle">'+(i+1)+'. '+esc(v.name)+'</div><div class="tierSub">'+esc(v.desc)+'</div><div class="price">'+(v.price?money(v.price)+' COINS':'FREE')+'</div><button data-car="'+i+'" '+(selected||(!owned&&!garageFree&&account.wallet<v.price)?'disabled':'')+'>'+(selected?'✓ DRIVING':owned?'EQUIP':garageFree?'EQUIP':'BUY CAR')+'</button></div>'}).join('')+'</div>';
  for(const b of modalContent.querySelectorAll('[data-tab]'))b.addEventListener('click',()=>{shopTab=b.dataset.tab;renderShop()});
  for(const b of modalContent.querySelectorAll('[data-car]'))b.addEventListener('click',()=>{const i=Number(b.dataset.car),v=GARAGE_CARS[i];if(!v)return;if(!account.carOwned.includes(i)&&!garageFree){if(account.wallet<v.price)return;account.wallet-=v.price;account.carOwned.push(i);}account.carEquipped=i;syncCarSmoke();if(!garageFree)saveAccount();updateCoinHud();if(state==='menu')kicker.textContent='STARTING CAR · '+carLabel();renderCarGarage();});
 }
@@ -1185,7 +1182,7 @@ async function confirmAccountReset(){
   const result=await onlineApi.deleteAccount();
   if(!result?.deleted)throw Error('Could not remove your leaderboard score.');
   // Preserve all local files until the cloud reset has been acknowledged.
-  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true,coinAchievementMigrationV2:true,motorsportNewsSeen:true,watercraftNewsSeen:true,golfNewsSeen:true,redPickupRewardV3:true,carSmoke:Array(10).fill(0)};
+  const blankProfile={nickname:'',fullName:'',showFullName:false,wallet:0,smokeOwned:[0],atmosOwned:[0],carOwned:[0],smokeEquipped:0,atmosEquipped:0,carEquipped:0,verifiedBest:0,achievementClaims:[],achievementCounts:{loops:0,bananas:0,green:0,red:0},pSecretRedeemed:false,newsSeen:true,worldMigrationV3:true,coinAchievementMigrationV2:true,motorsportNewsSeen:true,watercraftNewsSeen:true,golfNewsSeen:true,redPickupRewardV3:true,carSmoke:Array(11).fill(0)};
   if(cloudLoggedIn)await cloudRequest({action:'reset',profile:blankProfile});
   resetGeneration++;
   onlineRunFinished=true;onlineRunPromise=null;
@@ -1409,9 +1406,7 @@ function update(dt){
  }
  if(state!=='playing')return;
  time+=dt;
- // Only actual gameplay simulation time inside the promotion gets doubled.
- const bonusNow=Date.now()+serverClockOffset;
- if(bonusNow>=SCORE_BONUS_START&&bonusNow<SCORE_BONUS_END)bonusScoreSeconds+=dt;
+ // 3× applies uniformly; purple adds its usual 30% time-scoring bonus.
  loopBonusTime=Math.max(0,loopBonusTime-dt);
  greenRewardFlash=Math.max(0,greenRewardFlash-dt);
  updateBananaSpin(dt);
@@ -1634,7 +1629,7 @@ function drawRoad(){
   else{A=vec(e.from,0,e.at);B=vec(e.to,0,e.at)}
   if(Math.abs(A.x-camX)>185&&Math.abs(B.x-camX)>185)continue;
   if(Math.abs(A.z-camZ)>185&&Math.abs(B.z-camZ)>185)continue;
-  poly([A,B,vec(B.x,-2.3,B.z),vec(A.x,-2.3,A.z)],selectedCar().type==='boat'?(e.normal>0?'#14597d':'#0a4062'):selectedCar().type==='golf'?(e.normal>0?'#175531':'#1f6b38'):(e.normal>0?'#24466d':'#19294b'));
+  poly([A,B,vec(B.x,-2.3,B.z),vec(A.x,-2.3,A.z)],selectedCar().type==='tractor'?(e.normal>0?'#765016':'#a87814'):selectedCar().type==='boat'?(e.normal>0?'#14597d':'#0a4062'):selectedCar().type==='golf'?(e.normal>0?'#175531':'#1f6b38'):(e.normal>0?'#24466d':'#19294b'));
  }
  // One single surface fill for all rectangles: no tile seams, cracks or fake blocks.
  ctx.beginPath();let any=false;
@@ -1643,7 +1638,7 @@ function drawRoad(){
   any=appendPolygon([vec(t.x0,0,t.z0),vec(t.x1,0,t.z0),vec(t.x1,0,t.z1),vec(t.x0,0,t.z1)])||any;
  }
  if(any){
-  const g=ctx.createLinearGradient(0,H*.1,W,H*.95);const colors=selectedCar().type==='boat'?['#0c5480','#1398b6','#073b67']:selectedCar().type==='golf'?['#237f46','#43a657','#206c38']:activeTheme().deck;
+  const g=ctx.createLinearGradient(0,H*.1,W,H*.95);const colors=selectedCar().type==='tractor'?['#7c490b','#e9aa24','#aa6c11']:selectedCar().type==='boat'?['#0c5480','#1398b6','#073b67']:selectedCar().type==='golf'?['#237f46','#43a657','#206c38']:activeTheme().deck;
   g.addColorStop(0,colors[0]);g.addColorStop(.42,colors[1]);g.addColorStop(1,colors[2]);
   ctx.fillStyle=g;ctx.fill();
  }
@@ -1786,6 +1781,26 @@ function drawCoins(){
   const yy=(large?2.75:2.12)+Math.sin(time*4+c.phase)*.23;
   const p=project(vec(c.x,yy,c.z));if(!p||p.depth>220)continue;
   let r=clamp(camera.zoom/p.depth*(large?1.45:.87),2,large?49:36);
+  if(pickupKind==='tractor'){
+   // Stylised collectable frothy golden mugs; game-only decoration.
+   ctx.save();ctx.translate(p.x,p.y);const w=r*1.22,h=r*1.26;
+   ctx.fillStyle='#d48e14';ctx.fillRect(-w*.45,-h*.42,w*.86,h*.91);
+   ctx.fillStyle='#ffcb49';ctx.fillRect(-w*.35,-h*.38,w*.68,h*.82);
+   ctx.strokeStyle='#ffe8a1';ctx.lineWidth=Math.max(1,r*.13);ctx.beginPath();ctx.arc(w*.42,0,w*.28,-Math.PI/2,Math.PI/2);ctx.stroke();
+   ctx.fillStyle='#fff4dc';for(let j=0;j<4;j++){ctx.beginPath();ctx.arc((-1.5+j)*w*.23,-h*.46+(j%2)*2,r*.18,0,TAU);ctx.fill()}
+   ctx.restore();continue;
+  }
+  if(halloweenActive()&&!['golf','tokyo','formula'].includes(pickupKind)){
+   ctx.save();ctx.translate(p.x,p.y);ctx.rotate(.10*Math.sin(time*2+c.phase));
+   ctx.fillStyle='#e9851b';ctx.beginPath();ctx.ellipse(0,0,r*.88,r*.78,0,0,TAU);ctx.fill();
+   ctx.fillStyle='#ffaf32';for(const x of [-.40,0,.40]){ctx.beginPath();ctx.ellipse(x*r,0,r*.32,r*.72,0,0,TAU);ctx.fill()}
+   ctx.fillStyle='#438a45';ctx.fillRect(-r*.10,-r*.98,r*.22,r*.35);
+   ctx.fillStyle='#39211a';ctx.beginPath();ctx.moveTo(-r*.58,-r*.21);ctx.lineTo(-r*.17,-r*.21);ctx.lineTo(-r*.39,r*.18);ctx.fill();
+   ctx.beginPath();ctx.moveTo(r*.16,-r*.21);ctx.lineTo(r*.59,-r*.21);ctx.lineTo(r*.40,r*.18);ctx.fill();
+   ctx.beginPath();ctx.arc(0,r*.17,r*.39,0,Math.PI);ctx.fill();
+   if(large){ctx.fillStyle='#fff7bf';ctx.font='bold '+Math.max(9,r*.60)+'px system-ui';ctx.textAlign='center';ctx.fillText('5',0,r*.43);}
+   ctx.restore();continue;
+  }
   if(pickupKind==='golf'){
    // White dimpled 3D golf ball; 5-value pickup gets a gold rim.
    ctx.save();
